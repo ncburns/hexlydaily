@@ -30,10 +30,24 @@ export function tutorialPlan(puzzle){
 export function createGuidedTutorial({sound,showHelp,showPopup}){
  const dialog=document.createElement('dialog');
  dialog.id='tutorial-dialog';dialog.className='guided-tutorial';dialog.setAttribute('aria-labelledby','tutorial-title');
- dialog.innerHTML=`<div class="guided-header"><button class="icon-button" id="tutorial-exit" aria-label="Exit tutorial" autofocus>×</button><h2 id="tutorial-title">Tutorial</h2><button class="icon-button" id="tutorial-help" aria-label="How to play instructions">?</button></div><div class="guided-game demo-native" id="tutorial-game"><div class="board-viewport" id="tutorial-viewport"><div class="demo-board" id="tutorial-board" role="group" aria-label="Tutorial puzzle"></div></div><div class="guided-controls" hidden><button class="precision-toggle" id="tutorial-precision" aria-label="Tutorial Precision Mode" aria-pressed="false" hidden><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button></div></div><section class="guided-instruction" aria-labelledby="tutorial-step-title"><div class="guided-step-heading"><h3 id="tutorial-step-title"></h3><span id="tutorial-progress"></span></div><p id="tutorial-instruction" aria-live="polite"></p><p id="tutorial-feedback" role="status" hidden></p><button class="button quiet full" id="tutorial-continue" hidden>Continue</button></section>`;
+ dialog.innerHTML=`<div class="guided-header"><button class="icon-button" id="tutorial-exit" aria-label="Exit tutorial" autofocus>×</button><h2 id="tutorial-title">Tutorial</h2><button class="icon-button" id="tutorial-help" aria-label="How to play instructions">?</button></div><div class="guided-game demo-native" id="tutorial-game"><div class="board-viewport" id="tutorial-viewport"><div class="demo-board" id="tutorial-board" role="group" aria-label="Tutorial puzzle"></div></div><div class="guided-controls"><button class="precision-toggle" id="tutorial-precision" aria-label="Tutorial Precision Mode" aria-pressed="false" hidden><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button></div></div><section class="guided-instruction" aria-labelledby="tutorial-step-title"><div class="guided-instruction-content"><div class="guided-step-heading"><h3 id="tutorial-step-title"></h3><span id="tutorial-progress"></span></div><p id="tutorial-instruction" aria-live="polite"></p><p id="tutorial-feedback" role="status" hidden></p><button class="button quiet full" id="tutorial-continue" hidden>Continue</button></div></section>`;
  document.body.append(dialog);
  const $=id=>dialog.querySelector('#'+id),game=$('tutorial-game'),precision=$('tutorial-precision');
  const puzzle=generateUnique('mini','tutorial',0xC0FFEEn),plan=tutorialPlan(puzzle),sequence=new CompletionSequence();
+ //Reserve the tallest lesson at the current width, including its feedback or Continue button.
+ //Overlaid, inert sizing copies keep the dialog and board steady without fixed text heights.
+ const instruction=dialog.querySelector('.guided-instruction');
+ plan.forEach((lesson,lessonIndex)=>{
+  const size=document.createElement('div');size.className='guided-instruction-size';size.setAttribute('aria-hidden','true');size.inert=true;
+  size.innerHTML='<div class="guided-step-heading"><h3></h3><span></span></div><p></p>';
+  size.querySelector('h3').textContent=lesson.title;size.querySelector('span').textContent=`${lessonIndex+1}/${plan.length}`;size.querySelector('p').textContent=lesson.body;
+  if(lesson.kind==='precisionIntro'){
+   const next=document.createElement('span');next.className='button quiet full';next.textContent='Continue';size.append(next);
+  }else if(lesson.target||lesson.kind==='precisionSolve'){
+   const feedback=document.createElement('p');feedback.textContent='Click and hold the highlighted hex.';size.append(feedback);
+  }
+  instruction.append(size);
+ });
  const board=new Board($('tutorial-board'),$('tutorial-viewport'),act);
  let record,index=0,finishing=false;
  const step=()=>plan[index];
@@ -48,7 +62,6 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
   $('tutorial-step-title').textContent=s.title;$('tutorial-progress').textContent=`${index+1}/${plan.length}`;$('tutorial-instruction').textContent=s.body;
   $('tutorial-feedback').hidden=true;$('tutorial-continue').hidden=s.kind!=='precisionIntro';
   precision.hidden=!['precisionIntro','enablePrecision','precisionSolve'].includes(s.kind);
-  dialog.querySelector('.guided-controls').hidden=precision.hidden;
   precision.disabled=s.kind!=='enablePrecision';precision.setAttribute('aria-pressed',String(record.precision));
   precision.classList.toggle('tutorial-target',s.kind==='enablePrecision');
   board.cells.forEach(cell=>{

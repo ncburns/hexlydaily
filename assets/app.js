@@ -3,7 +3,7 @@ import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
 import {Board} from './board.js?v=2';
-import {createGuidedTutorial} from './guided-tutorial.js?v=2';
+import {createGuidedTutorial} from './guided-tutorial.js?v=3';
 import {makeSounds} from './audio.js';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
 const $=id=>document.getElementById(id);
