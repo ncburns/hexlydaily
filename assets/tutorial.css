@@ -25,20 +25,21 @@
 .guided-header{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:12px}
 .guided-header h2{text-align:center;font-size:16px;font-weight:600;letter-spacing:0}
 .guided-header .icon-button{width:42px;height:42px;border-radius:14px;background:#1f212966;border-color:#ffffff0d;font-size:22px}
+.howto-dialog #close-dialog{border-color:#ffffff0d}
+#tutorial-exit:focus-visible,.howto-dialog #close-dialog:focus-visible{outline:none;background:#292d34}
 .guided-game.demo-native{padding:0 8px 10px;margin:12px 0 14px;border:1px solid transparent;border-radius:18px;background:radial-gradient(ellipse,rgba(27,51,58,.15),transparent 72%);transition:border-color .25s}
 .guided-game .board-viewport{max-width:440px;width:min(100%,52dvh);margin:0 auto;overflow:hidden}
-.guided-game .board-viewport.is-zoomed{overflow:auto}
 .guided-game .demo-board{min-width:100%;aspect-ratio:360/340;position:relative;container-type:inline-size}
 .guided-game .demo-hex:disabled{cursor:default;opacity:1}
 .guided-game .demo-hex.tutorial-target{z-index:3}
 .guided-game .tutorial-target .tile-active{stroke:#3dd6db;stroke-width:2.5;opacity:.85;animation:hex-active 2s ease-in-out infinite}
 .guided-game .guided-click-label{position:absolute;top:calc(100% - 5px);left:50%;transform:translateX(-50%);padding:4px 7px;white-space:nowrap;border:1px solid #3dd6db66;background:#12262af2;border-radius:6px;color:#b9f3f4;font:600 10px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none}
-.guided-controls{display:flex;align-items:center;justify-content:center;gap:24px;min-height:48px}
+.guided-controls{display:flex;align-items:center;justify-content:center;min-height:48px}
+.guided-controls[hidden]{display:none}
 .guided-controls .precision-toggle.tutorial-target{box-shadow:0 0 0 5px #3dd6db18;color:#3dd6db;animation:hex-active 2s infinite}
 .guided-controls .precision-toggle[hidden]{display:none}
 .guided-controls .precision-toggle:disabled{opacity:.65}
 .guided-controls .precision-toggle[aria-pressed=true]:disabled{opacity:1}
-.guided-controls .zoom-controls button{min-width:36px;min-height:36px;border:1px solid #ffffff0d;border-radius:50%}
 .guided-instruction{padding:16px;background:#171a1fe6;border:1px solid #ffffff14;border-radius:18px}
 .guided-step-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .guided-step-heading h3{font-size:16px;font-weight:600;margin:0;color:#ebedf2}

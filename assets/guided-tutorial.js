@@ -10,7 +10,7 @@ export function tutorialPlan(puzzle){
  const wrong=key(playable.find(cell=>!solution.has(key(cell))&&touchesClue(cell))||playable.find(cell=>!solution.has(key(cell))));
  const actives=puzzle.solution.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),steps=[];
  actives.forEach((cell,index)=>{
-  steps.push({kind:'activate',target:key(cell),title:'Activate a Hex',body:index===0?'Each numbered hex shows how many glowing hexes should be touching it. Click the highlighted hex to make it glow. You can use the zoom controls for a closer look.':'Click the highlighted hex to make it glow. Each numbered hex shows how many glowing hexes should be touching it.'});
+  steps.push({kind:'activate',target:key(cell),title:'Activate a Hex',body:index===0?'Each numbered hex shows how many glowing hexes should be touching it. Click the highlighted hex to make it glow.':'Click the highlighted hex to make it glow. Each numbered hex shows how many glowing hexes should be touching it.'});
   if(index===Math.max(0,Math.min(2,actives.length-1))){
    steps.push({kind:'mark',target:wrong,title:'Mark as Unused',body:'Click and hold the highlighted hex to Mark it as unused. Marked hexes show a dashed outline and help you keep track of spaces you know are not part of the solution.'});
    steps.push({kind:'clear',target:wrong,title:'Clear a Mark',body:'Click and hold the marked hex again to Clear it. Marks are notes, so you can clear them anytime if your thinking changes.'});
@@ -22,7 +22,7 @@ export function tutorialPlan(puzzle){
   {kind:'finish',title:'Puzzle solved!',body:'Nice work. You solved the puzzle by turning every number green. The remaining empty hexes fill in to celebrate.'},
   {kind:'precisionIntro',title:'Precision Mode',body:'Precision Mode is for players who want a real challenge. One wrong move, and you will have to start over from the beginning.'},
   {kind:'enablePrecision',title:'Step Up',body:'Click the button to activate Precision Mode. Hexly will track whether you can solve this puzzle cleanly from start to finish.'},
-  {kind:'precisionSolve',title:'Earn It',body:'In Precision Mode, glowing moves are final once you begin. Marks are still notes you can clear anytime. Need a closer look? Use the zoom controls. Solve the puzzle if you can!'}
+  {kind:'precisionSolve',title:'Earn It',body:'In Precision Mode, glowing moves are final once you begin. Marks are still notes you can clear anytime. Solve the puzzle if you can!'}
  );
  return steps;
 }
@@ -30,7 +30,7 @@ export function tutorialPlan(puzzle){
 export function createGuidedTutorial({sound,showHelp,showPopup}){
  const dialog=document.createElement('dialog');
  dialog.id='tutorial-dialog';dialog.className='guided-tutorial';dialog.setAttribute('aria-labelledby','tutorial-title');
- dialog.innerHTML=`<div class="guided-header"><button class="icon-button" id="tutorial-exit" aria-label="Exit tutorial" autofocus>×</button><h2 id="tutorial-title">Tutorial</h2><button class="icon-button" id="tutorial-help" aria-label="How to play instructions">?</button></div><div class="guided-game demo-native" id="tutorial-game"><div class="board-viewport" id="tutorial-viewport"><div class="demo-board" id="tutorial-board" role="group" aria-label="Tutorial puzzle"></div></div><div class="guided-controls"><button class="precision-toggle" id="tutorial-precision" aria-label="Tutorial Precision Mode" aria-pressed="false" hidden><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button><div class="zoom-controls" aria-label="Tutorial puzzle zoom"><button id="tutorial-zoom-out" aria-label="Zoom tutorial out">−</button><span id="tutorial-zoom-label">100%</span><button id="tutorial-zoom-in" aria-label="Zoom tutorial in">+</button></div></div></div><section class="guided-instruction" aria-labelledby="tutorial-step-title"><div class="guided-step-heading"><h3 id="tutorial-step-title"></h3><span id="tutorial-progress"></span></div><p id="tutorial-instruction" aria-live="polite"></p><p id="tutorial-feedback" role="status" hidden></p><button class="button quiet full" id="tutorial-continue" hidden>Continue</button></section>`;
+ dialog.innerHTML=`<div class="guided-header"><button class="icon-button" id="tutorial-exit" aria-label="Exit tutorial" autofocus>×</button><h2 id="tutorial-title">Tutorial</h2><button class="icon-button" id="tutorial-help" aria-label="How to play instructions">?</button></div><div class="guided-game demo-native" id="tutorial-game"><div class="board-viewport" id="tutorial-viewport"><div class="demo-board" id="tutorial-board" role="group" aria-label="Tutorial puzzle"></div></div><div class="guided-controls" hidden><button class="precision-toggle" id="tutorial-precision" aria-label="Tutorial Precision Mode" aria-pressed="false" hidden><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button></div></div><section class="guided-instruction" aria-labelledby="tutorial-step-title"><div class="guided-step-heading"><h3 id="tutorial-step-title"></h3><span id="tutorial-progress"></span></div><p id="tutorial-instruction" aria-live="polite"></p><p id="tutorial-feedback" role="status" hidden></p><button class="button quiet full" id="tutorial-continue" hidden>Continue</button></section>`;
  document.body.append(dialog);
  const $=id=>dialog.querySelector('#'+id),game=$('tutorial-game'),precision=$('tutorial-precision');
  const puzzle=generateUnique('mini','tutorial',0xC0FFEEn),plan=tutorialPlan(puzzle),sequence=new CompletionSequence();
@@ -38,10 +38,9 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
  let record,index=0,finishing=false;
  const step=()=>plan[index];
  function message(text){$('tutorial-feedback').textContent=text;$('tutorial-feedback').hidden=false;}
- function zoom(){const z=board.zoom;$('tutorial-zoom-label').textContent=Math.round(z*100)+'%';$('tutorial-zoom-out').disabled=z===1;$('tutorial-zoom-in').disabled=z===2.5;}
  function resetBoard(){
   sequence.cancel();finishing=false;record={selected:[],marked:[],precision:false,solvedAt:null};
-  game.classList.remove('is-solved','is-celebrating');board.render(puzzle);board.el.setAttribute('aria-label','Mini tutorial puzzle');zoom();
+  game.classList.remove('is-solved','is-celebrating');board.render(puzzle);board.el.setAttribute('aria-label','Mini tutorial puzzle');
  }
  function render(){
   const s=step(),free=s.kind==='precisionSolve',canPlay=!!s.target||free;
@@ -49,6 +48,7 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
   $('tutorial-step-title').textContent=s.title;$('tutorial-progress').textContent=`${index+1}/${plan.length}`;$('tutorial-instruction').textContent=s.body;
   $('tutorial-feedback').hidden=true;$('tutorial-continue').hidden=s.kind!=='precisionIntro';
   precision.hidden=!['precisionIntro','enablePrecision','precisionSolve'].includes(s.kind);
+  dialog.querySelector('.guided-controls').hidden=precision.hidden;
   precision.disabled=s.kind!=='enablePrecision';precision.setAttribute('aria-pressed',String(record.precision));
   precision.classList.toggle('tutorial-target',s.kind==='enablePrecision');
   board.cells.forEach(cell=>{
@@ -74,7 +74,6 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
   record.marked=remaining;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,timing=completionTiming(reveal.length,reduced);
   board.update(record,{celebrate:!reduced,revealKeys:reveal,revealInterval:timing.revealInterval});board.cells.forEach(cell=>{cell.disabled=true;cell.classList.remove('tutorial-target');cell.querySelector('.guided-click-label')?.remove();});
-  zoom();
   sequence.start([[timing.popupAt,()=>{if(!dialog.open)return;game.classList.add('is-solved');if(!reduced)game.classList.add('is-celebrating');sound.play('solved');completePopup(isPrecision);}],[timing.finishAt,()=>game.classList.remove('is-celebrating')]]);
  }
  function act(type,key,cell){
@@ -108,7 +107,6 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
  $('tutorial-exit').onclick=close;$('tutorial-help').onclick=showHelp;
  $('tutorial-continue').onclick=()=>{sound.unlock();enter(index+1);};
  precision.onclick=()=>{if(step().kind!=='enablePrecision')return;sound.unlock();record.precision=true;sound.play('precisionToggle');enter(index+1);};
- $('tutorial-zoom-out').onclick=()=>{board.setZoom(board.zoom-.5);zoom();};$('tutorial-zoom-in').onclick=()=>{board.setZoom(board.zoom+.5);zoom();};
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)board.cancelPointer();});
  return {open,close};

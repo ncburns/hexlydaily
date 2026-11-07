@@ -3,7 +3,7 @@ import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
 import {Board} from './board.js?v=2';
-import {createGuidedTutorial} from './guided-tutorial.js';
+import {createGuidedTutorial} from './guided-tutorial.js?v=2';
 import {makeSounds} from './audio.js';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
 const $=id=>document.getElementById(id);
@@ -189,7 +189,7 @@ function showHelp(){
  }});
  guidedTutorial.open();showHelpText();
 }
-function showHelpText(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p>${howToExampleMarkup()}<h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p>${precisionHelpMarkup()}<div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`);$('dialog').scrollTop=0;$('help-done').onclick=closeDialog;dialogAfterClose=mountHowToExample($('howto-example'));store.setSetting('howToPlaySeen',true);}
+function showHelpText(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p>${howToExampleMarkup()}<h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p>${precisionHelpMarkup()}<div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`,'howto-dialog');$('dialog').scrollTop=0;$('help-done').onclick=closeDialog;dialogAfterClose=mountHowToExample($('howto-example'));store.setSetting('howToPlaySeen',true);}
 function showFirstVisitHelp(){
  if(store.setting('howToPlaySeen',false))return;
  //Recognize existing visitors before openBoard saves their last size.
@@ -265,7 +265,7 @@ async function showShare(day=currentDay){
  sharing=true;updateShareButtons();
  try{
   //No asynchronous work before this call: preserve the click's user activation.
-  await navigator.share({files:[entry.file],url:entry.model.url});
+  await navigator.share({files:[entry.file],url:entry.model.url,title:'Hexly'});
  }catch(error){if(error.name!=='AbortError')showSharePreview(day);}
  finally{sharing=false;updateShareButtons();}
 }
@@ -283,7 +283,7 @@ async function showSharePreview(day=currentDay){
   const supportsFiles=navigator.canShare?.({files:[file]});
   //Share the card and clean URL together without a text caption.
   //The receiving app still controls attachment order and presentation.
-  const payload=supportsFiles?{files:[file],url:model.url}:{url:model.url};
+  const payload=supportsFiles?{files:[file],url:model.url,title:'Hexly'}:{url:model.url,title:'Hexly'};
   try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Use Copy results to include the website link.');}}
  };
  try{
