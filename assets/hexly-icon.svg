@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+  <title>Hexly</title>
+  <rect width="128" height="128" rx="28" fill="#0b1216"/>
+  <polygon points="64.000000,19.000000 102.971143,41.500000 102.971143,86.500000 64.000000,109.000000 25.028857,86.500000 25.028857,41.500000" stroke="#3dd6db" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="64" cy="64" r="7.5" fill="#3dd6db"/>
+</svg>
