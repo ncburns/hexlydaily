@@ -238,7 +238,8 @@ async function showShare(day=currentDay){
   const supportsFiles=navigator.canShare?.({files:[file]});
   //Keep the URL inside a text caption, not a standalone URL preview item.
   //The receiving app still controls attachment order and presentation.
-  const payload=supportsFiles?{files:[file],text:caption}:{text:text.replace('\n'+model.url,'\n'+caption)};
+  //Test the reversed field order in iOS Messages while keeping one combined share.
+  const payload=supportsFiles?{text:caption,files:[file]}:{text:text.replace('\n'+model.url,'\n'+caption)};
   try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Use Copy results to include the website link.');}}
  };
  try{
