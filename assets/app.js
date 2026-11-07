@@ -225,8 +225,8 @@ function showClearData(){
  };
 }
 async function showShare(day=currentDay){
- const model=shareModel(store.all(),day),text=shareText(model),caption=`Hexly Daily ${model.url} - Play now!`;let shareBlob=null,previewURL=null;
- showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><p class="share-caption">Hexly Daily <a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a> - Play now!</p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
+ const model=shareModel(store.all(),day),text=shareText(model);let shareBlob=null,previewURL=null;
+ showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
  dialogAfterClose=()=>{if(previewURL)URL.revokeObjectURL(previewURL);};
  const copy=async()=>{try{await navigator.clipboard.writeText(text);notify('Results copied.');}catch(_){showDialog('Copy your results',`<p>Select and copy the text below.</p><textarea id="copy-text" readonly style="width:100%;min-height:260px;background:#0b151b;color:#d8e8eb;border:1px solid #45616a;padding:15px"></textarea>`);$('copy-text').value=text;$('copy-text').select();}};
@@ -236,10 +236,9 @@ async function showShare(day=currentDay){
   if(!navigator.share){save();return;}
   const file=new File([shareBlob],'Hexly_Daily_'+day+'.png',{type:'image/png'});
   const supportsFiles=navigator.canShare?.({files:[file]});
-  //Keep the URL inside a text caption, not a standalone URL preview item.
+  //Share the card and clean URL together without a text caption.
   //The receiving app still controls attachment order and presentation.
-  //Test the reversed field order in iOS Messages while keeping one combined share.
-  const payload=supportsFiles?{text:caption,files:[file]}:{text:text.replace('\n'+model.url,'\n'+caption)};
+  const payload=supportsFiles?{files:[file],url:model.url}:{url:model.url};
   try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Use Copy results to include the website link.');}}
  };
  try{
