@@ -12,10 +12,9 @@
 .tutorial-clue-fill{fill:#1f2129;stroke:var(--tutorial-clue-stroke);stroke-width:2;stroke-linejoin:round;transition:stroke .22s ease-in-out}
 .tutorial-clue-glow{fill:var(--tutorial-clue-text);opacity:var(--tutorial-clue-glow);filter:blur(14px);transition:fill .22s ease-in-out,opacity .22s ease-in-out}
 .tutorial-clue text{font:700 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--tutorial-clue-text);transition:fill .22s ease-in-out}
-.tutorial-footer{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:12px}
+.tutorial-footer{margin-top:12px}
 .tutorial-legend{display:grid;gap:6px;color:var(--muted);font-size:13px;line-height:1.5}
 .tutorial-legend span{display:flex;align-items:center;gap:8px}
 .tutorial-legend svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .tutorial-ok{color:#73b394}.tutorial-warn{color:#c78f57}
-.tutorial-toggle{font-size:11px;min-height:34px;text-decoration:underline;text-underline-offset:3px}
 @media(prefers-reduced-motion:reduce){.howto-example *{transition:none!important}}

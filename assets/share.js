@@ -29,7 +29,7 @@ function loadIcon(name) {
 let icons;
 
 //HomeShare.swift: StreakShareCard, ShareRunTile and ShareStreakStat at 360pt / 3x.
-//The image carries the native card. The link is shared separately so the sender can place it beneath it.
+//The image carries the native card. The clickable website link is included in the same share action.
 export async function renderShareCard(model) {
  const [flame,scope]=await (icons??=(Promise.all([loadIcon('flame'),loadIcon('scope-bright')]).catch(error=>{icons=null;throw error;})));
  const width=360,tileWidth=76,tileHeight=tileWidth/0.8660254037844386;

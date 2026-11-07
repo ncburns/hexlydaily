@@ -1,5 +1,5 @@
 import {shareModel,shareText,renderShareCard} from './share.js';
-import {howToExampleMarkup,mountHowToExample} from './tutorial.js';
+import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
 import {Board} from './board.js';
@@ -225,28 +225,21 @@ function showClearData(){
  };
 }
 async function showShare(day=currentDay){
- const model=shareModel(store.all(),day),text=shareText(model);let shareBlob=null,previewURL=null;
- showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">hexlydaily.com</a><p class="fine-print share-order">Share the card first, then the link in the same conversation to place it underneath.</p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="share-link">Share link ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
+ const model=shareModel(store.all(),day),text=shareText(model),caption=`Hexly Daily ${model.url} - Play now!`;let shareBlob=null,previewURL=null;
+ showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><p class="share-caption">Hexly Daily <a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a> - Play now!</p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
  dialogAfterClose=()=>{if(previewURL)URL.revokeObjectURL(previewURL);};
  const copy=async()=>{try{await navigator.clipboard.writeText(text);notify('Results copied.');}catch(_){showDialog('Copy your results',`<p>Select and copy the text below.</p><textarea id="copy-text" readonly style="width:100%;min-height:260px;background:#0b151b;color:#d8e8eb;border:1px solid #45616a;padding:15px"></textarea>`);$('copy-text').value=text;$('copy-text').select();}};
  $('copy-results').onclick=copy;
  const save=()=>{if(shareBlob)download(shareBlob,'Hexly_Daily_'+day+'.png');};saveButton.onclick=save;
- const linkButton=$('share-link');
- const copyLink=async()=>{try{await navigator.clipboard.writeText(model.url);notify('Website link copied. Paste it after your card.');}catch(_){notify('Select and copy the website link beneath your card.');}};
- linkButton.onclick=async()=>{
-  if(!navigator.share){await copyLink();return;}
-  try{await navigator.share({url:model.url});}catch(error){if(error.name!=='AbortError')await copyLink();}
- };
- if(!navigator.share)linkButton.textContent='Copy link';
  shareButton.onclick=async()=>{
   if(!navigator.share){save();return;}
   const file=new File([shareBlob],'Hexly_Daily_'+day+'.png',{type:'image/png'});
   const supportsFiles=navigator.canShare?.({files:[file]});
-  //Web Share cannot order an image and a link like the native app's item sources.
-  //Send the image alone; a separate user gesture shares the link after the card.
-  if(!supportsFiles){save();notify('Card downloaded. Send the image, then use Share link.');return;}
-  try{await navigator.share({files:[file]});notify('After sending your card, use Share link for the same conversation.');}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Send the image, then use Share link.');}}
+  //Keep the URL inside a text caption, not a standalone URL preview item.
+  //The receiving app still controls attachment order and presentation.
+  const payload=supportsFiles?{files:[file],text:caption}:{text:text.replace('\n'+model.url,'\n'+caption)};
+  try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Use Copy results to include the website link.');}}
  };
  try{
   shareBlob=await renderShareCard(model);
