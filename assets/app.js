@@ -2,7 +2,8 @@ import {shareModel,shareText,renderShareCard} from './share.js';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
-import {Board} from './board.js';
+import {Board} from './board.js?v=2';
+import {createGuidedTutorial} from './guided-tutorial.js';
 import {makeSounds} from './audio.js';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
 const $=id=>document.getElementById(id);
@@ -180,7 +181,15 @@ function showPrecisionFailure(){const next=MODES.find(m=>m!==mode&&!store.load(c
  $('continue-normal').onclick=()=>{closeDialog();notify('Switched to Normal Mode');};$('precision-exit').onclick=()=>{closeDialog();document.querySelector('[data-size="'+mode+'"]').focus();};if(next)$('try-another').onclick=()=>{closeDialog();openBoard(next);};
 }
 function precisionHelpMarkup(){return `<section class="precision-help" aria-labelledby="precision-help-title"><h3 id="precision-help-title">${icon('scope-bright')}<span>Precision Mode</span></h3><h4>How it works</h4><p>${copy.precisionHowItWorks}</p><h4>Daily Streak</h4><p>${copy.precisionDailyStreak}</p><h4>Precision Streak</h4><p>${copy.precisionStreakHelp}</p><h4>Badges</h4><p>${copy.precisionBadges}</p><h4>Tips</h4><ul class="rule-list">${copy.precisionTips.map(tip=>`<li>${tip}</li>`).join('')}</ul></section>`;}
-function showHelp(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p>${howToExampleMarkup()}<h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p>${precisionHelpMarkup()}<div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`);$('help-done').onclick=closeDialog;dialogAfterClose=mountHowToExample($('howto-example'));store.setSetting('howToPlaySeen',true);}
+let guidedTutorial;
+function showHelp(){
+ if(!guidedTutorial)guidedTutorial=createGuidedTutorial({sound,showHelp:showHelpText,showPopup:(title,body,label,onClose,kind='solved-dialog')=>{
+  showDialog(title,`<p>${body}</p><div class="dialog-actions"><button class="button primary" id="tutorial-popup-continue">${label}</button></div>`,kind+' tutorial-popup',onClose);
+  $('tutorial-popup-continue').onclick=closeDialog;
+ }});
+ guidedTutorial.open();showHelpText();
+}
+function showHelpText(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p>${howToExampleMarkup()}<h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p>${precisionHelpMarkup()}<div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`);$('dialog').scrollTop=0;$('help-done').onclick=closeDialog;dialogAfterClose=mountHowToExample($('howto-example'));store.setSetting('howToPlaySeen',true);}
 function showFirstVisitHelp(){
  if(store.setting('howToPlaySeen',false))return;
  //Recognize existing visitors before openBoard saves their last size.
