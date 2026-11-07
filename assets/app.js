@@ -1,4 +1,5 @@
 import {shareModel,shareText,renderShareCard} from './share.js';
+import {howToExampleMarkup,mountHowToExample} from './tutorial.js';
 import {copy} from './native-copy.js';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
 import {Board} from './board.js';
@@ -176,7 +177,13 @@ function showPrecisionFailure(){const next=MODES.find(m=>m!==mode&&!store.load(c
  sound.play('precisionFail');showDialog(copy.precisionFailed,`<p>${next?copy.precisionRetry:copy.precisionExhausted}</p><div class="dialog-actions">${next?'<button class="button primary" id="try-another">Try Another Size</button>':''}<button class="button ${next?'quiet':'primary'}" id="continue-normal">Complete in Normal Mode</button><button class="button quiet" id="precision-exit">Exit</button></div>`,'precision-dialog');
  $('continue-normal').onclick=()=>{closeDialog();notify('Switched to Normal Mode');};$('precision-exit').onclick=()=>{closeDialog();document.querySelector('[data-size="'+mode+'"]').focus();};if(next)$('try-another').onclick=()=>{closeDialog();openBoard(next);};
 }
-function showHelp(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p><h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p><div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`);$('help-done').onclick=closeDialog;}
+function showHelp(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${copy.howToMark}</p><p>${copy.howToNumber}</p><ul class="rule-list"><li class="green-copy">${copy.green}</li><li class="yellow-copy">${copy.yellow}</li></ul><h3>How to win</h3><p>${copy.howToWin}</p>${howToExampleMarkup()}<h3>What the colors mean</h3><dl class="color-meanings"><dt>Glowing hex</dt><dd>A hex you've clicked on</dd><dt>Marked hex</dt><dd>A space you marked as unused. It is a note and does not count toward solving.</dd><dt>Green number</dt><dd>The right amount of glowing hexes are touching it</dd><dt>Yellow number</dt><dd>Too many glowing hexes are touching it</dd></dl><h3>Sharing</h3><p>${copy.sharing}</p><div class="dialog-actions"><button class="button primary" id="help-done">Done</button></div>`);$('help-done').onclick=closeDialog;dialogAfterClose=mountHowToExample($('howto-example'));store.setSetting('howToPlaySeen',true);}
+function showFirstVisitHelp(){
+ if(store.setting('howToPlaySeen',false))return;
+ //Recognize existing visitors before openBoard saves their last size.
+ if(store.all().length||store.setting('lastSize',null)!==null){store.setSetting('howToPlaySeen',true);return;}
+ showHelp();
+}
 function showPrecision(infoOnly=false){infoOnly=infoOnly===true;
  if(!infoOnly){if(!record||loading||$('precision-button').disabled)return;if(record.startedAt||record.moves>0){notify('Cannot change mode mid-game');return;}if(record.precision){setMode(false);return;}if(!store.setting('showPrecisionWarnings',true)){setMode(true);return;}}
  const canEnable=record&&!loading&&!record.startedAt&&!record.solvedAt&&!record.precisionFailed&&!record.precision;
@@ -219,19 +226,27 @@ function showClearData(){
 }
 async function showShare(day=currentDay){
  const model=shareModel(store.all(),day),text=shareText(model);let shareBlob=null,previewURL=null;
- showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
+ showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">hexlydaily.com</a><p class="fine-print share-order">Share the card first, then the link in the same conversation to place it underneath.</p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="share-link">Share link ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
  dialogAfterClose=()=>{if(previewURL)URL.revokeObjectURL(previewURL);};
  const copy=async()=>{try{await navigator.clipboard.writeText(text);notify('Results copied.');}catch(_){showDialog('Copy your results',`<p>Select and copy the text below.</p><textarea id="copy-text" readonly style="width:100%;min-height:260px;background:#0b151b;color:#d8e8eb;border:1px solid #45616a;padding:15px"></textarea>`);$('copy-text').value=text;$('copy-text').select();}};
  $('copy-results').onclick=copy;
  const save=()=>{if(shareBlob)download(shareBlob,'Hexly_Daily_'+day+'.png');};saveButton.onclick=save;
+ const linkButton=$('share-link');
+ const copyLink=async()=>{try{await navigator.clipboard.writeText(model.url);notify('Website link copied. Paste it after your card.');}catch(_){notify('Select and copy the website link beneath your card.');}};
+ linkButton.onclick=async()=>{
+  if(!navigator.share){await copyLink();return;}
+  try{await navigator.share({url:model.url});}catch(error){if(error.name!=='AbortError')await copyLink();}
+ };
+ if(!navigator.share)linkButton.textContent='Copy link';
  shareButton.onclick=async()=>{
   if(!navigator.share){save();return;}
   const file=new File([shareBlob],'Hexly_Daily_'+day+'.png',{type:'image/png'});
   const supportsFiles=navigator.canShare?.({files:[file]});
-  //Like the app, share the card with a bare clickable website link beneath it.
-  const payload=supportsFiles?{title:'Hexly',files:[file],text:model.url}:{title:'Hexly',text};
-  try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Share card saved. You can copy the results and website link too.');}}
+  //Web Share cannot order an image and a link like the native app's item sources.
+  //Send the image alone; a separate user gesture shares the link after the card.
+  if(!supportsFiles){save();notify('Card downloaded. Send the image, then use Share link.');return;}
+  try{await navigator.share({files:[file]});notify('After sending your card, use Share link for the same conversation.');}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Send the image, then use Share link.');}}
  };
  try{
   shareBlob=await renderShareCard(model);
@@ -272,4 +287,4 @@ window.addEventListener('storage',event=>{
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{updateClock();refreshSummary();}});
 window.addEventListener('pagehide',()=>{unlockSequence.cancel();cancelCompletion();sound.pause();});
-$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();animateSavedProgress();setInterval(updateClock,1000);openBoard(mode);
+$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();animateSavedProgress();setInterval(updateClock,1000);showFirstVisitHelp();openBoard(mode);
