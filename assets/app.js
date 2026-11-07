@@ -31,13 +31,13 @@ function createSizes(){$('size-list').innerHTML=MODES.map((m,i)=>`<button class=
 function icon(name,extra=''){return `<img class="native-icon ${extra}" src="assets/${name}.svg${name==='flame'?'?v=2':''}" alt="">`;}
 function bestMarkup(s,records){return MODES.map(m=>{const best=records.find(r=>r.mode===m&&r.solvedAt&&r.elapsedMs===s.bestTimes[m]);return `<div><dt>${SIZE_NAMES[m]} - ${best?formatTime(best.elapsedMs):'—'}</dt><dd>${best?escapeHTML(displayDay(best.day,{month:'numeric',day:'numeric',year:'2-digit'})):''}</dd></div>`;}).join('');}
 function resultsMarkup(day){return MODES.map(m=>{const r=store.load(day,m),state=r.solvedAt?(r.precisionWin?'precision':'normal'):'pending',time=r.solvedAt?formatTime(r.elapsedMs||0):'—',label=`${SIZE_NAMES[m]}: ${r.solvedAt?time+(r.precisionWin?', completed in Precision Mode':', completed in Normal Mode'):'not completed'}`;
- return `<div class="daily-run ${state}" data-result-size="${m}" role="img" aria-label="${escapeHTML(label)}"><svg class="run-hex" viewBox="0 0 86.60254 100" aria-hidden="true"><polygon points="43.30127,2 84.87049,26 84.87049,74 43.30127,98 1.73205,74 1.73205,26" vector-effect="non-scaling-stroke"/></svg><div class="run-content" aria-hidden="true"><span>${SIZE_NAMES[m]}</span><strong>${time}</strong><i>${state==='precision'?icon('scope-bright'):state==='normal'?'<b class="normal-dot"></b>':''}</i></div></div>`;
+ return `<div class="daily-run ${state}" data-result-size="${m}" role="img" aria-label="${escapeHTML(label)}"><svg class="run-hex" viewBox="0 0 86.60254 100" aria-hidden="true"><polygon points="43.30127,2 84.87049,26 84.87049,74 43.30127,98 1.73205,74 1.73205,26" vector-effect="non-scaling-stroke"/></svg><div class="run-content" aria-hidden="true"><span>${SIZE_NAMES[m]}</span><strong>${time}</strong><i>${state==='precision'?icon('scope-dark'):state==='normal'?'<b class="normal-dot"></b>':''}</i></div></div>`;
  }).join('');}
 function visibleSummaryRecords(){return store.all().map(r=>pendingUnlock&&r.day===pendingUnlock.day&&r.mode===pendingUnlock.mode?{...r,solvedAt:null,elapsedMs:null,precisionWin:false}:r);}
 function refreshSummary(){if(completionPending)return;const records=store.all(),visible=visibleSummaryRecords(),s=summary(visible,dayKey()),d=dailySummary(visible,currentDay);
  $('today-count').textContent=d.complete&&!dayBannerPending?'Day Complete!':`${d.count}/4 Complete`;$('today-count').classList.toggle('day-complete',d.complete&&!dayBannerPending);
  $('daily-progress-hexes').setAttribute('aria-label',`${d.count} of 4 daily puzzles complete`);$('daily-progress-hexes').querySelectorAll('svg').forEach((hex,i)=>hex.classList.toggle('filled',i<d.count));
- document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('[data-size-state]').textContent=r.solvedAt?formatTime(r.elapsedMs||0):'';b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'✓'):'';});
+ document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('[data-size-state]').textContent=r.solvedAt?formatTime(r.elapsedMs||0):'';b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'<b class="normal-dot"></b>'):'';});
  $('best-times-list').innerHTML=bestMarkup(s,records);$('streak').textContent=s.streak;$('precision-streak').textContent=s.precisionStreak;
  refreshHistory(records);applyUnlockAppearance();
 }
@@ -52,12 +52,12 @@ function animateSavedProgress(){
 }
 function weekMarkup(records){return weekHistory(records).map(({day,count,played})=>{
  const selected=day===selectedHistoryDay,today=day===dayKey();
- return `<button type="button" class="week-day ${count?'complete':''} ${played?'played':''} ${today?'today':''} ${selected?'selected':''}" data-history-day="${day}" aria-pressed="${selected}" ${today?'aria-current="date"':''} aria-label="${escapeHTML(displayDay(day))}: ${count} of 4 solved"><span>${escapeHTML(displayDay(day,{weekday:'narrow'}))}</span><svg class="week-hex" viewBox="0 0 26 30" aria-hidden="true"><polygon points="13,1 25,8 25,22 13,29 1,22 1,8"/>${today&&!count?'<circle cx="13" cy="15" r="1.5"/>':''}</svg></button>`;
+ return `<button type="button" class="week-day ${count?'complete':''} ${played?'played':''} ${today?'today':''} ${selected?'selected':''}" data-history-day="${day}" aria-pressed="${selected}" ${today?'aria-current="date"':''} aria-label="${escapeHTML(displayDay(day))}: ${count} of 4 solved"><span>${escapeHTML(displayDay(day,{weekday:'narrow'}))}</span><svg class="week-hex" viewBox="0 0 26 30" aria-hidden="true"><polygon class="week-fill" points="13,1 25,8 25,22 13,29 1,22 1,8"/><polygon class="week-selection" points="13,1 25,8 25,22 13,29 1,22 1,8" transform="translate(13 15) scale(1.2) translate(-13 -15)"/>${today&&!count?'<circle cx="13" cy="15" r="1.5"/>':''}</svg></button>`;
  }).join('');}
 function refreshHistory(records=store.all()){
  if(!weekHistory(records).some(d=>d.day===selectedHistoryDay))selectedHistoryDay=dayKey();
  const d=dailySummary(records,selectedHistoryDay);
- $('week').innerHTML=weekMarkup(records);$('history-date').textContent=displayDay(selectedHistoryDay,{month:'short',day:'numeric',year:'numeric'});$('history-date').dateTime=selectedHistoryDay;$('history-count').textContent=`${d.count}/4 solved`;
+ $('week').innerHTML=weekMarkup(records);$('history-date').textContent=displayDay(selectedHistoryDay,{month:'long',day:'numeric',year:'numeric'});$('history-date').dateTime=selectedHistoryDay;$('history-count').textContent=`${d.count}/4 solved`;$('history-count').classList.toggle('day-complete',d.complete);
  prepareShareCards();
  $('daily-results').innerHTML=resultsMarkup(selectedHistoryDay);$('total-time').hidden=!d.complete;$('total-time-value').textContent=d.complete?formatTime(d.totalMs):'';
  applyUnlockAppearance();
@@ -69,7 +69,7 @@ function bindHistory(element){element.addEventListener('click',event=>{
  });}
 
 function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);$('countdown').textContent=formatTime(next-now);
- $('today-date').textContent=displayDay(dayKey(),{weekday:'long',month:'short',day:'numeric'});$('today-date').dateTime=dayKey();
+ $('today-date').textContent=displayDay(dayKey(),{weekday:'long',month:'long',day:'numeric'});$('today-date').dateTime=dayKey();
  if(record){$('timer').textContent=formatTime(record.solvedAt?record.elapsedMs||0:record.startedAt?Math.max(0,Date.now()-record.startedAt):0);$('timer').setAttribute('aria-label',record.solvedAt?'Completed solve time':'Elapsed solve time');}
  if(dayKey()!==currentDay)$('new-day').hidden=false;
 }
@@ -77,7 +77,7 @@ function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!
  $('precision-button').setAttribute('aria-pressed',String(record.precision));$('precision-button').disabled=!!record.solvedAt||record.precisionFailed;
  $('precision-button').title=record.precisionFailed?'Precision is disabled for this attempt':record.startedAt?'Cannot change mode mid-game':record.precision?'Disable Precision Mode':'Enable Precision Mode';
  $('reset-button').hidden=!!record.solvedAt;$('reset-button').disabled=!!record.solvedAt||record.precision&&record.precisionAttempted;
- $('completion').hidden=!record.solvedAt;
+ $('completion').hidden=!record.solvedAt||!nextUnsolved();
  if(record.solvedAt){$('next-size').hidden=!nextUnsolved();$('next-size').textContent='Next Puzzle';}
  updateZoom();updateClock();refreshSummary();
 }
@@ -235,17 +235,15 @@ function prepareShareCard(day,records=store.all()){
  return entry;
 }
 function updateShareButtons(){
- for(const [id,day] of [['share-day',selectedHistoryDay],['share-solve',currentDay]]){
-  const button=$(id),pending=!!shareCards.get(day)?.pending;
-  button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
- }
+ const button=$('share-day'),pending=!!shareCards.get(selectedHistoryDay)?.pending;
+ button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
 }
 function prepareShareCards(){
  if(!navigator.share)return;
  const records=store.all();
- for(const day of new Set([selectedHistoryDay,currentDay]))prepareShareCard(day,records);
- //Retain only the days currently offered by the two Share buttons.
- for(const day of shareCards.keys())if(day!==selectedHistoryDay&&day!==currentDay)shareCards.delete(day);
+ prepareShareCard(selectedHistoryDay,records);
+ //Retain only the day currently offered by the sidebar Share button.
+ for(const day of shareCards.keys())if(day!==selectedHistoryDay)shareCards.delete(day);
  updateShareButtons();
 }
 async function showShare(day=currentDay){
@@ -294,7 +292,7 @@ $('settings-button').onclick=showSettings;
 $('reset-button').onclick=showReset;
 $('help-button').onclick=showHelp;
 $('data-button').onclick=showPrivacy;
-$('share-day').onclick=()=>showShare(selectedHistoryDay);$('share-solve').onclick=()=>showShare(currentDay);
+$('share-day').onclick=()=>showShare(selectedHistoryDay);
 $('next-size').onclick=()=>{const next=nextUnsolved();if(next)openBoard(next);};$('retry-load').onclick=()=>openBoard(mode);
 $('close-dialog').onclick=closeDialog;$('dialog').addEventListener('cancel',e=>{e.preventDefault();closeDialog();});$('dialog').addEventListener('click',e=>{if(e.target===$('dialog')){const r=$('dialog').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeDialog();}});
 $('load-today').onclick=()=>{currentDay=dayKey();selectedHistoryDay=currentDay;$('new-day').hidden=true;closeDialog();openBoard('mini');};
