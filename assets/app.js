@@ -13,12 +13,13 @@ if(!MODES.includes(mode))mode='mini';
 let record=null,puzzle=null,loadNumber=0,loading=true,toastTimer,worker,dialogAfterClose=null,confettiTimer,dayTimer;
 const completionSequence=new CompletionSequence(),unlockSequence=new CompletionSequence();let completionPending=false,pendingUnlock=null,dayBannerPending=false,selectedHistoryDay=dayKey();
 const cache=new Map(),pending=new Map();let workerId=0;
+const shareCards=new Map();let sharing=false;
 const sound=makeSounds(state=>{$('audio-notice').hidden=state!=='blocked';$('sound-button').title=state==='blocked'?'Retry sound effects':state==='muted'?'Enable sound effects':'Mute sound effects';});
 let soundEnabled=store.setting('sound',true)!==false;
 if(!soundEnabled)sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));
 const board=new Board($('board'),$('board-viewport'),handleAction);
 function notify(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>{$('toast').hidden=true;},3500);}
-function persist(){if(!record)return;if(store.save(record)){$('save-label').textContent='Progress saved in this browser.';$('save-warning').hidden=true;}}
+function persist(){if(!record)return;if(store.save(record)){$('save-label').textContent='Progress saved in this browser.';$('save-warning').hidden=true;}prepareShareCards();}
 function newWorker(){try{worker=new Worker(new URL('./puzzle-worker.js',import.meta.url),{type:'module'});worker.onmessage=e=>{const p=pending.get(e.data.id);if(!p)return;clearTimeout(p.timeout);pending.delete(e.data.id);e.data.error?p.reject(Error(e.data.error)):p.resolve(e.data.puzzle);};worker.onerror=()=>{for(const p of pending.values()){clearTimeout(p.timeout);p.reject(Error('Worker unavailable'));}pending.clear();worker.terminate();worker=null;};}catch(_){worker=null;}}
 async function loadPuzzle(day,size){const key=day+'|'+size;if(cache.has(key))return cache.get(key);if(!worker)newWorker();let result;
  if(worker){try{result=await new Promise((resolve,reject)=>{const id=++workerId,timeout=setTimeout(()=>{pending.delete(id);reject(Error('Puzzle preparation timed out'));},12000);pending.set(id,{resolve,reject,timeout});worker.postMessage({id,day,mode:size});});}catch(_){worker?.terminate();worker=null;}}
@@ -57,6 +58,7 @@ function refreshHistory(records=store.all()){
  if(!weekHistory(records).some(d=>d.day===selectedHistoryDay))selectedHistoryDay=dayKey();
  const d=dailySummary(records,selectedHistoryDay);
  $('week').innerHTML=weekMarkup(records);$('history-date').textContent=displayDay(selectedHistoryDay,{month:'short',day:'numeric',year:'numeric'});$('history-date').dateTime=selectedHistoryDay;$('history-count').textContent=`${d.count}/4 solved`;
+ prepareShareCards();
  $('daily-results').innerHTML=resultsMarkup(selectedHistoryDay);$('total-time').hidden=!d.complete;$('total-time-value').textContent=d.complete?formatTime(d.totalMs):'';
  applyUnlockAppearance();
 }
@@ -224,7 +226,42 @@ function showClearData(){
   closeDialog();notify('All local Hexly data has been cleared.');
  };
 }
+//Prepare PNGs ahead of time so native sharing starts within the original click.
+function prepareShareCard(day,records=store.all()){
+ const model=shareModel(records,day),key=JSON.stringify(model),cached=shareCards.get(day);
+ if(cached?.key===key)return cached;
+ const entry={key,model,file:null,pending:true,error:null};shareCards.set(day,entry);
+ entry.promise=renderShareCard(model).then(blob=>{entry.file=new File([blob],'Hexly_Daily_'+day+'.png',{type:'image/png'});return blob;}).catch(error=>{entry.error=error;return null;}).finally(()=>{entry.pending=false;updateShareButtons();});
+ return entry;
+}
+function updateShareButtons(){
+ for(const [id,day] of [['share-day',selectedHistoryDay],['share-solve',currentDay]]){
+  const button=$(id),pending=!!shareCards.get(day)?.pending;
+  button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
+ }
+}
+function prepareShareCards(){
+ if(!navigator.share)return;
+ const records=store.all();
+ for(const day of new Set([selectedHistoryDay,currentDay]))prepareShareCard(day,records);
+ //Retain only the days currently offered by the two Share buttons.
+ for(const day of shareCards.keys())if(day!==selectedHistoryDay&&day!==currentDay)shareCards.delete(day);
+ updateShareButtons();
+}
 async function showShare(day=currentDay){
+ if(sharing)return;
+ if(!navigator.share){showSharePreview(day);return;}
+ const entry=prepareShareCard(day);
+ if(entry.pending){updateShareButtons();notify('Preparing your share card…');return;}
+ if(!entry.file||!navigator.canShare?.({files:[entry.file]})){showSharePreview(day);return;}
+ sharing=true;updateShareButtons();
+ try{
+  //No asynchronous work before this call: preserve the click's user activation.
+  await navigator.share({files:[entry.file],url:entry.model.url});
+ }catch(error){if(error.name!=='AbortError')showSharePreview(day);}
+ finally{sharing=false;updateShareButtons();}
+}
+async function showSharePreview(day=currentDay){
  const model=shareModel(store.all(),day),text=shareText(model);let shareBlob=null,previewURL=null;
  showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
