@@ -50,23 +50,20 @@
 .daily-results>.daily-run{position:relative;display:block;container-type:inline-size;aspect-ratio:.8660254037844386;padding:0;border-radius:0;background:none;min-width:0}
 .run-hex{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .run-hex polygon{fill:#0e101566;stroke:#a6adb880;stroke-width:1.5;stroke-dasharray:4 3}
-.daily-run.normal .run-hex polygon{fill:#1f212973;stroke:#ffffff25;stroke-width:1;stroke-dasharray:none}
+.daily-run.normal .run-hex polygon{fill:#1f212959;stroke:#ffffff14;stroke-width:1;stroke-dasharray:none}
 .daily-run.precision .run-hex polygon{fill:#3dd6db1a;stroke:#3dd6db;stroke-width:1.5;stroke-dasharray:none}
 .run-content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0 5px;line-height:1.1}
 .run-content>span{font-size:clamp(7px,19cqw,10px);font-weight:600;color:#d0d5df;white-space:nowrap}
 .daily-results .run-content>strong{font-size:clamp(9px,25cqw,15px);font-weight:700;font-variant-numeric:tabular-nums;color:#f3f5f7;white-space:nowrap}
 .daily-run.pending .run-content>span{color:#a6adb8}.daily-run.pending .run-content>strong{color:#a6adb8b3}
 .daily-results .run-content>i{display:flex;align-items:center;justify-content:center;min-height:11px;height:11px}
-.daily-results .run-content .native-icon{width:10px;height:10px}.normal-dot{display:inline-block;flex-shrink:0;width:4px;height:4px;border-radius:50%;background:#a6adb8}
+.daily-results .run-content .native-icon{width:10px;height:10px}.normal-dot{display:inline-block;flex-shrink:0;width:4px;height:4px;border-radius:50%;background:#6b7380}
 .app-card{padding:15px}.app-card-heading{display:flex;align-items:center;gap:11px}.app-card-heading img{display:block;float:none;width:36px;height:36px;border-radius:9px;margin:0}.app-card-heading h2{font-size:20px;line-height:1.1;letter-spacing:-.4px}.app-card>p:not(.eyebrow){margin-top:9px;font-size:11px;line-height:1.5}.app-card .button{margin-top:12px;padding:9px 6px;min-height:36px;font-size:9px}.right-sidebar{gap:16px}
 @media(max-width:950px){.app-card{align-self:start}.app-card .button{max-width:none}}
 
-/* Roomier desktop rails; uncompleted and normal results use a grey interior. */
+/* Roomier desktop rails. */
 .header-inner,.shell{max-width:1760px;padding-inline:28px}.site-footer{max-width:1704px;width:calc(100% - 56px);margin-inline:auto}
 .play-layout{--sidebar-width:clamp(240px,calc(50vw - 350px),380px);grid-template-columns:var(--sidebar-width) minmax(0,1fr) var(--sidebar-width)}
-.daily-run .run-hex polygon,.daily-run.normal .run-hex polygon{fill:#292b36}
-.daily-run.precision .run-hex polygon{fill:#3dd6db}
-.daily-run.precision .run-content>span,.daily-run.precision .run-content>strong{color:#0b252a}
 .daily-results .run-content .native-icon{width:13px;height:13px}.daily-results .run-content>i{height:13px;min-height:13px}.run-content{gap:3px}
 .daily-progress-hexes polygon{transition:fill .35s ease,stroke-opacity .35s ease}.game-panel{transition:border-color .4s ease}.completion-reveal{animation:result-enter .35s ease-out both}.result-reveal{animation:result-enter .4s cubic-bezier(.2,.7,.2,1) both}.progress-reveal{animation:progress-settle .38s ease-out .14s both}
 @keyframes result-enter{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
@@ -90,16 +87,13 @@
 #history-count{color:#a6adb8}
 #history-count.day-complete{color:#3dd6db}
 button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;cursor:pointer;min-width:0;min-height:44px;font-family:inherit;transition:color .2s ease}
-.week-hex{width:26px;height:30px;overflow:visible;transition:transform .2s ease}
-.week-hex .week-fill{fill:#292b36;stroke:#42505c;stroke-width:1.2;transition:fill .2s ease,stroke .2s ease}
-.week-hex circle{fill:#a6adb8}
-.week-day.played .week-fill{fill:#3dd6db33;stroke:#3dd6db88}
-.week-day.complete .week-fill{fill:#3dd6db;stroke:#3dd6db}
+.week-hex{display:block;width:min(40px,calc(100% - 4px));height:auto;aspect-ratio:26/30;overflow:visible;transition:transform .2s ease}
+.week-hex .week-fill{fill:#1f2129;stroke:#ffffff14;stroke-width:1.5;transition:fill .2s ease,stroke .2s ease}
+.week-day.played .week-fill{fill:#3dd6db33;stroke:#3dd6db8c}
+.week-day.selected .week-fill{fill:#1f2129d9;stroke:#3dd6db;stroke-width:2.5}
+.week-day.played.selected .week-fill{fill:#3dd6db57}
 .week-day.selected{color:#3dd6db;font-weight:700}
 .week-day.selected .week-hex{transform:scale(1.06)}
-.week-hex .week-selection{fill:none;stroke:transparent;stroke-width:2;transition:stroke .2s ease}
-.week-day.selected .week-selection{stroke:#3dd6db}
-.week-day:hover .week-fill{stroke:#3dd6db}
 .week-day:focus-visible{outline:2px solid #91d4d8;outline-offset:2px}
 @media(max-width:950px){.shell{padding-top:38px}}
 @media(max-width:650px){.shell{padding-top:26px}}
@@ -198,3 +192,23 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
  .right-sidebar{grid-column:1/-1;grid-row:3}
 }
 @media(min-width:951px){.right-sidebar{grid-column:3;grid-row:1/span 2}}
+
+/* Streak history follows the app's translucent cards and hex states. */
+.right-sidebar .streak-panel{padding:0;border:0;background:none}
+.streak-panel .week{max-width:none;margin:22px 0;align-items:start}
+button.week-day{font-size:11px;line-height:1.2;gap:8px;color:#6b7380}
+button.week-day.selected{color:#3dd6db}
+.daily-stats-card,.streak-panel .best-times{border:1px solid #ffffff14;border-radius:18px;background:#171a1f6b;padding:15px 12px}
+.daily-stats-card #history-heading{margin-top:0;align-items:baseline;gap:8px}
+#history-date{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap}
+#history-count{font-weight:600}
+.daily-stats-card .daily-results{gap:6px;margin:12px 0 0}
+.daily-stats-card .run-content>span{color:#a6adb8}
+.daily-stats-card .run-content>strong{color:#f3f5f7}
+.daily-stats-card .daily-run.pending .run-content>span{color:#6b7380}
+.daily-stats-card .daily-run.pending .run-content>strong{color:#6b7380b3}
+.daily-stats-card .total-time{padding:16px 0 0}
+.streak-panel .best-times{margin:20px 0}
+.streak-panel .best-times dt,.streak-panel .best-times dd{color:#88929f}
+@media(max-width:1150px) and (min-width:951px){#history-date{font-size:11px}}
+@media(max-width:950px) and (min-width:651px){#history-date{font-size:10px}}
