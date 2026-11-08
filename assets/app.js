@@ -74,7 +74,13 @@ function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.
  if(record){$('timer').textContent=formatTime(record.solvedAt?record.elapsedMs||0:record.startedAt?Math.max(0,Date.now()-record.startedAt):0);$('timer').setAttribute('aria-label',record.solvedAt?'Completed solve time':'Elapsed solve time');}
  if(dayKey()!==currentDay)$('new-day').hidden=false;
 }
-function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!record||!puzzle)return;board.update(record,{celebrate,revealKeys});$('game').classList.toggle('is-solved',!!record.solvedAt&&!$('game').classList.contains('is-completing'));
+//Keep the solved outline in sync with the actual daily dialog lifecycle.
+function syncSolvedOutline(){
+ const game=$('game'),dialog=$('dialog');
+ const solvedPopupOpen=dialog.open&&dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');
+ game.classList.toggle('has-solved-outline',game.classList.contains('is-solved')&&!completionPending&&!solvedPopupOpen);
+}
+function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!record||!puzzle)return;board.update(record,{celebrate,revealKeys});$('game').classList.toggle('is-solved',!!record.solvedAt&&!$('game').classList.contains('is-completing'));syncSolvedOutline();
  $('precision-button').setAttribute('aria-pressed',String(record.precision));$('precision-button').disabled=!!record.solvedAt||record.precisionFailed;
  $('precision-button').title=record.precisionFailed?'Precision is disabled for this attempt':record.startedAt?'Cannot change mode mid-game':record.precision?'Disable Precision Mode':'Enable Precision Mode';
  $('reset-button').hidden=!!record.solvedAt;$('reset-button').disabled=!!record.solvedAt||record.precision&&record.precisionAttempted;
@@ -83,7 +89,7 @@ function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!
  updateZoom();updateClock();refreshSummary();
 }
 function nextUnsolved(){const start=MODES.indexOf(mode);for(let i=1;i<=4;i++){const m=MODES[(start+i)%4];if(!store.load(currentDay,m).solvedAt)return m;}return null;}
-async function openBoard(size,remember=true){cancelCompletion();mode=size;if(remember)store.setSetting('lastSize',mode);const request=++loadNumber;loading=true;$('precision-button').disabled=true;record=null;puzzle=null;clearTimeout(confettiTimer);if(!pendingUnlock?.started)sound.stop();$('game').classList.remove('is-celebrating','is-solved');$('completion').hidden=true;$('loading').hidden=false;$('loading-text').textContent='Preparing your daily puzzle…';$('retry-load').hidden=true;$('board-title').textContent=SIZE_NAMES[size];$('timer').textContent='0:00';$('timer').setAttribute('aria-label','Elapsed solve time');refreshSummary();
+async function openBoard(size,remember=true){cancelCompletion();mode=size;if(remember)store.setSetting('lastSize',mode);const request=++loadNumber;loading=true;$('precision-button').disabled=true;record=null;puzzle=null;clearTimeout(confettiTimer);if(!pendingUnlock?.started)sound.stop();$('game').classList.remove('is-celebrating','is-solved','has-solved-outline');$('completion').hidden=true;$('loading').hidden=false;$('loading-text').textContent='Preparing your daily puzzle…';$('retry-load').hidden=true;$('board-title').textContent=SIZE_NAMES[size];$('timer').textContent='0:00';$('timer').setAttribute('aria-label','Elapsed solve time');refreshSummary();
  try{const data=await loadPuzzle(currentDay,size);if(request!==loadNumber)return;puzzle=data;record=store.load(currentDay,size);if(applyPrecisionPreference(record,store.setting('precisionAlwaysOn',false)))persist();const clueKeys=new Set(puzzle.clues.map(([q,r])=>q+','+r));const valid=new Set(puzzle.cells.filter(([q,r])=>!clueKeys.has(q+','+r)).map(([q,r])=>q+','+r));record.selected=record.selected.filter(k=>valid.has(k));record.marked=record.marked.filter(k=>valid.has(k));board.render(puzzle);if(record.solvedAt&&!board.evaluate(record).solved){record.solvedAt=null;record.elapsedMs=null;record.precisionWin=false;persist();}loading=false;$('loading').hidden=true;updateZoom();refreshGame();if(pendingUnlock&&!pendingUnlock.started)startDailyUnlock();
  }catch(error){if(request!==loadNumber)return;$('loading-text').textContent='The puzzle couldn’t load. Please try again.';$('retry-load').hidden=false;console.error('Puzzle preparation failed',error);if(pendingUnlock&&!pendingUnlock.started)startDailyUnlock();}
 }
@@ -140,13 +146,13 @@ function startDailyUnlock(){
   [t.finishAt,guarded(finishUnlock)]
  ]);
 }
-function cancelCompletion(){completionSequence.cancel();completionPending=false;$('game').classList.remove('is-completing','is-celebrating');delete $('game').dataset.completionPhase;}
+function cancelCompletion(){completionSequence.cancel();completionPending=false;$('game').classList.remove('is-completing','is-celebrating');delete $('game').dataset.completionPhase;syncSolvedOutline();}
 function startCompletion(revealKeys,personalBest,completedDay){
  finishUnlock();
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,timing=completionTiming(revealKeys.length,reduced),solvedRecord=record,request=loadNumber;
  pendingUnlock={day:currentDay,mode,precision:record.precisionWin,completedDay,index:dailySummary(store.all(),currentDay).count-1,phase:'waiting',badge:false,pop:null,started:false,timing:unlockTiming(record.precisionWin,sound.duration('dailyUnlockSettle'),sound.duration('precisionBadgeReveal'))};
  dayBannerPending=completedDay;
- completionPending=true;$('game').classList.add('is-completing');$('game').dataset.completionPhase='reveal';
+ completionPending=true;syncSolvedOutline();$('game').classList.add('is-completing');$('game').dataset.completionPhase='reveal';
  board.update(record,{celebrate:!reduced,revealKeys,revealInterval:timing.revealInterval});updateZoom();updateClock();$('reset-button').hidden=true;$('precision-button').disabled=true;
  const guarded=fn=>()=>{if(record===solvedRecord&&request===loadNumber)fn();};
  completionSequence.start([
@@ -161,9 +167,9 @@ function startCompletion(revealKeys,personalBest,completedDay){
 function setMode(precision){if(!record||loading||record.startedAt||record.solvedAt||precision&&record.precisionFailed)return;const changed=record.precision!==precision;record.precision=precision;record.precisionManuallyChosen=true;persist();refreshGame();if(changed)sound.play(precision?'precisionToggle':'cardClick');}
 function showDialog(title,body,kind='',afterClose=null){
  if(dialogAfterClose){const fn=dialogAfterClose;dialogAfterClose=null;fn();}
- clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
+ clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();syncSolvedOutline();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
 }
-function closeDialog(){clearTimeout(confettiTimer);$('dialog').querySelectorAll('.confetti').forEach(el=>el.remove());$('dialog').close();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
+function closeDialog(){clearTimeout(confettiTimer);$('dialog').querySelectorAll('.confetti').forEach(el=>el.remove());$('dialog').close();syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
 function showSolved(personalBest,completedDay){const next=nextUnsolved(),solvedDay=record.day;
  showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button>${completedDay?'<button class="button quiet" id="solved-share">Share <span aria-hidden="true">↗</span></button>':''}</div>`,'solved-dialog',startDailyUnlock);
  $('solved-continue').onclick=()=>{if(next){dialogAfterClose=null;closeDialog();openBoard(next);}else closeDialog();};

@@ -22,9 +22,9 @@
 /*The tutorial stays open beneath the dismissible How to play sheet.*/
 .guided-tutorial{width:min(560px,calc(100% - 32px));max-width:560px;max-height:94dvh;padding:16px;background:#0e1418;border:1px solid #ffffff14;border-radius:22px;overflow:auto;overscroll-behavior:contain}
 .guided-tutorial::backdrop{background:#020709d9;backdrop-filter:blur(3px)}
-.guided-header{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:12px}
+.guided-header{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:12px}
 .guided-header h2{text-align:center;font-size:16px;font-weight:600;letter-spacing:0}
-.guided-header .icon-button{width:42px;height:42px;border-radius:14px;background:#1f212966;border-color:#ffffff0d;font-size:22px}
+.guided-header .icon-button{width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;padding:0;line-height:1;box-sizing:border-box;border-radius:14px;background:#1f212966;border-color:#ffffff0d;font-size:22px}
 .howto-dialog #close-dialog{border-color:#ffffff0d}
 #tutorial-exit:focus-visible,.howto-dialog #close-dialog:focus-visible{outline:none;background:#292d34}
 .guided-game.demo-native{padding:0 8px 10px;margin:12px 0 14px;border:1px solid transparent;border-radius:18px;background:radial-gradient(ellipse,rgba(27,51,58,.15),transparent 72%);transition:border-color .25s}
