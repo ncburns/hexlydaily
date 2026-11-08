@@ -131,12 +131,13 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 
 /* A cleaner board header and an almost-clear solved backdrop. */
 .game-heading{min-height:42px;align-items:center}
-.game-heading h2,.timer-block .timer{font-size:18px;line-height:1.2}
+.game-heading h2,.timer-block .timer{line-height:1.2}
+.game-heading h2{font-size:18px}
 .timer-block{display:block;line-height:1.2}
-.timer-block .timer{color:var(--text)}
+.timer-block .timer{font-size:17px;color:var(--text)}
 .board-viewport{max-width:576px}
 .solved-dialog::backdrop{background:#03090c33;backdrop-filter:blur(.5px);-webkit-backdrop-filter:blur(.5px)}
-@media(max-width:650px){.game-heading{min-height:38px}.game-heading h2,.timer-block .timer{font-size:16px}}
+@media(max-width:650px){.game-heading{min-height:38px}.game-heading h2{font-size:16px}.timer-block .timer{font-size:15px}}
 
 /* Native daily unlock: 1s fill, 100ms flash, 120ms settle, then Precision reveal. */
 .daily-progress-hexes .unlock-fill polygon{transition:fill 1s ease-in-out,stroke-opacity 1s ease-in-out}
