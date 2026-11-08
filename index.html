@@ -8,8 +8,8 @@
 <link rel="canonical" href="https://hexlydaily.com">
 <meta property="og:title" content="Hexly Daily"><meta property="og:type" content="website"><meta property="og:site_name" content="Hexly Daily"><meta property="og:description" content="Four sizes. One simple rule. A fresh set of hex logic puzzles every day.">
 <meta property="og:url" content="https://hexlydaily.com">
-<link rel="stylesheet" href="assets/tiles.css?v=3"><link rel="stylesheet" href="assets/style.css?v=18"><link rel="stylesheet" href="assets/tutorial.css?v=6">
-<script src="assets/demo-audio.js" defer></script><script src="assets/placement-audio.js?v=1" defer></script><script src="assets/app.js?v=26" type="module"></script>
+<link rel="stylesheet" href="assets/tiles.css?v=3"><link rel="stylesheet" href="assets/style.css?v=20"><link rel="stylesheet" href="assets/tutorial.css?v=6">
+<script src="assets/demo-audio.js" defer></script><script src="assets/placement-audio.js?v=1" defer></script><script src="assets/app.js?v=28" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#game">Skip to puzzle</a>
@@ -26,10 +26,10 @@
 <div class="game-column">
 <section class="game-panel demo-native" id="game" aria-labelledby="board-title" tabindex="-1">
 <div class="game-heading"><h2 id="board-title">Mini</h2><div class="timer-block"><span class="timer" id="timer" role="timer" aria-label="Elapsed solve time">0:00</span></div></div>
-<div class="game-toolbar"><div class="small-controls"><button id="reset-button" class="icon-button" aria-label="Reset puzzle" title="Reset puzzle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></svg></button></div></div>
+
 
 <div class="board-stage" id="board-stage"><div id="board-viewport" class="board-viewport"><div class="demo-board" id="board" role="group" aria-label="Daily puzzle"></div></div><div class="loading" id="loading" role="status"><span class="loading-hex" aria-hidden="true">⬡</span><span id="loading-text">Preparing your daily puzzle…</span><button id="retry-load" class="text-button" hidden>Try again</button></div></div>
-<div class="board-bottom"><button class="icon-button" id="sound-button" aria-label="Sound effects" aria-pressed="true" title="Mute sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 5 9H2v6h3l6 5zM15 8c2 2 2 6 0 8M18 4c5 4 5 12 0 16"/></svg></button><button id="precision-button" class="precision-toggle" aria-label="Precision mode" aria-pressed="false" title="Enable Precision mode" disabled><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button><div class="zoom-controls" aria-label="Puzzle zoom"><button id="zoom-out" aria-label="Zoom out" disabled>−</button><span id="zoom-label">100%</span><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+<div class="board-bottom"><button class="icon-button" id="sound-button" aria-label="Sound effects" aria-pressed="true" title="Mute sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 5 9H2v6h3l6 5zM15 8c2 2 2 6 0 8M18 4c5 4 5 12 0 16"/></svg></button><button id="precision-button" class="precision-toggle" aria-label="Precision mode" aria-pressed="false" title="Enable Precision mode" disabled><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button><button id="reset-button" class="icon-button" hidden aria-label="Reset puzzle" title="Reset puzzle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></svg></button></div>
 
 
 <p id="audio-notice" class="audio-notice" role="alert" hidden>Sound couldn’t start. Click the speaker to retry.</p>
