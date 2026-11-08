@@ -3,7 +3,7 @@ import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION} from './completion.js?v=2';
 import {Board} from './board.js?v=3';
-import {createGuidedTutorial} from './guided-tutorial.js?v=4';
+import {createGuidedTutorial} from './guided-tutorial.js?v=5';
 import {makeSounds,placementRate} from './audio.js?v=2';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
 const $=id=>document.getElementById(id);
@@ -12,7 +12,7 @@ const store=new LocalProgress(()=>{$('save-warning').hidden=false;$('save-label'
 let currentDay=dayKey(),mode=MODES.includes(new URLSearchParams(location.search).get('size'))?new URLSearchParams(location.search).get('size'):store.setting('lastSize','mini');
 if(!MODES.includes(mode))mode='mini';
 let record=null,puzzle=null,loadNumber=0,loading=true,toastTimer,worker,dialogAfterClose=null,confettiTimer,dayTimer;
-const completionSequence=new CompletionSequence(),unlockSequence=new CompletionSequence();let completionPending=false,pendingUnlock=null,dayBannerPending=false,selectedHistoryDay=dayKey();
+const completionSequence=new CompletionSequence(),unlockSequence=new CompletionSequence();let completionPending=false,pendingUnlock=null,dayBannerPending=false,selectedHistoryDay=dayKey(),solvedOutlineFrame=0;
 const cache=new Map(),pending=new Map();let workerId=0;
 const shareCards=new Map();let sharing=false;
 const sound=makeSounds(state=>{$('audio-notice').hidden=state!=='blocked';$('sound-button').title=state==='blocked'?'Retry sound effects':state==='muted'?'Enable sound effects':'Mute sound effects';});
@@ -78,7 +78,20 @@ function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.
 function syncSolvedOutline(){
  const game=$('game'),dialog=$('dialog');
  const solvedPopupOpen=dialog.open&&dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');
- game.classList.toggle('has-solved-outline',game.classList.contains('is-solved')&&!completionPending&&!solvedPopupOpen);
+ game.classList.toggle('has-solved-outline',!!record?.solvedAt&&!loading&&!completionPending&&!solvedOutlineFrame&&!solvedPopupOpen);
+}
+//Refresh from the saved solve after the modal has left the rendering layer.
+//Two frames give mobile browsers a neutral board frame before the one-second fade.
+function revealSolvedOutlineAfterClose(){
+ if(solvedOutlineFrame||!record?.solvedAt)return;
+ const solvedRecord=record,request=loadNumber;
+ $('game').classList.remove('has-solved-outline');
+ solvedOutlineFrame=requestAnimationFrame(()=>{
+  solvedOutlineFrame=requestAnimationFrame(()=>{
+   solvedOutlineFrame=0;
+   if(record===solvedRecord&&request===loadNumber)refreshGame();
+  });
+ });
 }
 function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!record||!puzzle)return;board.update(record,{celebrate,revealKeys});$('game').classList.toggle('is-solved',!!record.solvedAt&&!$('game').classList.contains('is-completing'));syncSolvedOutline();
  $('precision-button').setAttribute('aria-pressed',String(record.precision));$('precision-button').disabled=!!record.solvedAt||record.precisionFailed;
@@ -146,7 +159,7 @@ function startDailyUnlock(){
   [t.finishAt,guarded(finishUnlock)]
  ]);
 }
-function cancelCompletion(){completionSequence.cancel();completionPending=false;$('game').classList.remove('is-completing','is-celebrating');delete $('game').dataset.completionPhase;syncSolvedOutline();}
+function cancelCompletion(){cancelAnimationFrame(solvedOutlineFrame);solvedOutlineFrame=0;completionSequence.cancel();completionPending=false;$('game').classList.remove('is-completing','is-celebrating');delete $('game').dataset.completionPhase;syncSolvedOutline();}
 function startCompletion(revealKeys,personalBest,completedDay){
  finishUnlock();
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,timing=completionTiming(revealKeys.length,reduced),solvedRecord=record,request=loadNumber;
@@ -169,7 +182,7 @@ function showDialog(title,body,kind='',afterClose=null){
  if(dialogAfterClose){const fn=dialogAfterClose;dialogAfterClose=null;fn();}
  clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();syncSolvedOutline();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
 }
-function closeDialog(){clearTimeout(confettiTimer);$('dialog').querySelectorAll('.confetti').forEach(el=>el.remove());$('dialog').close();syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
+function closeDialog(){const dialog=$('dialog'),dailySolved=dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');clearTimeout(confettiTimer);dialog.querySelectorAll('.confetti').forEach(el=>el.remove());dialog.close();if(dailySolved)revealSolvedOutlineAfterClose();else syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
 function showSolved(personalBest,completedDay){const next=nextUnsolved(),solvedDay=record.day;
  showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button>${completedDay?'<button class="button quiet" id="solved-share">Share <span aria-hidden="true">↗</span></button>':''}</div>`,'solved-dialog',startDailyUnlock);
  $('solved-continue').onclick=()=>{if(next){dialogAfterClose=null;closeDialog();openBoard(next);}else closeDialog();};
@@ -317,6 +330,7 @@ $('help-button').onclick=showHelp;
 $('data-button').onclick=showPrivacy;
 $('share-day').onclick=()=>showShare(selectedHistoryDay);
 $('next-size').onclick=()=>{const next=nextUnsolved();if(next)openBoard(next);};$('retry-load').onclick=()=>openBoard(mode);
+$('dialog').addEventListener('close',()=>{if(!$('dialog').open&&!$('game').classList.contains('has-solved-outline')&&$('dialog').classList.contains('solved-dialog')&&!$('dialog').classList.contains('tutorial-popup'))revealSolvedOutlineAfterClose();});
 $('close-dialog').onclick=closeDialog;$('dialog').addEventListener('cancel',e=>{e.preventDefault();closeDialog();});$('dialog').addEventListener('click',e=>{if(e.target===$('dialog')){const r=$('dialog').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeDialog();}});
 $('load-today').onclick=()=>{currentDay=dayKey();selectedHistoryDay=currentDay;$('new-day').hidden=true;closeDialog();openBoard('mini');};
 window.addEventListener('storage',event=>{
