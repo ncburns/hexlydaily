@@ -164,10 +164,14 @@ function showDialog(title,body,kind='',afterClose=null){
  clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
 }
 function closeDialog(){clearTimeout(confettiTimer);$('dialog').querySelectorAll('.confetti').forEach(el=>el.remove());$('dialog').close();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
-function showSolved(personalBest,completedDay){const next=nextUnsolved();
- showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button></div>`,'solved-dialog',startDailyUnlock);
+function showSolved(personalBest,completedDay){const next=nextUnsolved(),solvedDay=record.day;
+ showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button>${completedDay?'<button class="button quiet" id="solved-share">Share <span aria-hidden="true">↗</span></button>':''}</div>`,'solved-dialog',startDailyUnlock);
  $('solved-continue').onclick=()=>{if(next){dialogAfterClose=null;closeDialog();openBoard(next);}else closeDialog();};
- if(completedDay)confettiTimer=setTimeout(()=>{if($('dialog').open&&$('dialog').classList.contains('solved-dialog'))confetti();},sound.duration('solved'));
+ if(completedDay){
+  $('solved-share').dataset.shareDay=solvedDay;$('solved-share').onclick=()=>showShare(solvedDay);
+  prepareShareCards();
+  confettiTimer=setTimeout(()=>{if($('dialog').open&&$('dialog').classList.contains('solved-dialog'))confetti();},sound.duration('solved'));
+ }
 }
 function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const host=document.createElement('div');host.className='confetti';host.setAttribute('aria-hidden','true');
  for(let i=0;i<28;i++){const particle=document.createElement('i'),angle=Math.random()*Math.PI*2,d=80+Math.random()*90,size=5+Math.random()*4;particle.style.cssText=`--dx:${Math.cos(angle)*d}px;--dy:${Math.sin(angle)*d+95}px;--spin:${Math.random()*360}deg;--delay:${Math.random()*.08}s;width:${size}px;height:${size*1.4}px`;host.append(particle);}
@@ -245,15 +249,18 @@ function prepareShareCard(day,records=store.all()){
  return entry;
 }
 function updateShareButtons(){
- const button=$('share-day'),pending=!!shareCards.get(selectedHistoryDay)?.pending;
- button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
+ for(const [button,day] of [[$('share-day'),selectedHistoryDay],[$('solved-share'),$('solved-share')?.dataset.shareDay]]){
+  if(!button)continue;const pending=!!shareCards.get(day)?.pending;
+  button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
+ }
 }
 function prepareShareCards(){
  if(!navigator.share)return;
- const records=store.all();
- prepareShareCard(selectedHistoryDay,records);
- //Retain only the day currently offered by the sidebar Share button.
- for(const day of shareCards.keys())if(day!==selectedHistoryDay)shareCards.delete(day);
+ const records=store.all(),days=new Set([selectedHistoryDay]),solvedShare=$('solved-share');
+ if($('dialog').open&&solvedShare?.dataset.shareDay)days.add(solvedShare.dataset.shareDay);
+ for(const day of days)prepareShareCard(day,records);
+ //Keep the completed day's card ready even when the sidebar shows another day.
+ for(const day of shareCards.keys())if(!days.has(day))shareCards.delete(day);
  updateShareButtons();
 }
 async function showShare(day=currentDay){
