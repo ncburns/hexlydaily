@@ -232,8 +232,20 @@ button.week-day.selected{color:#3dd6db}
 .precision-dialog #close-dialog,.solved-dialog #close-dialog,.reset-dialog #close-dialog{display:none}
 
 /* The day-complete card and its Share action stay together on small screens. */
-.day-complete-share .share-card-image{width:auto;max-width:100%;max-height:min(450px,calc(85dvh - 148px));margin-inline:auto;object-fit:contain}
+.day-complete-share .share-card-image{width:100%;height:auto;max-width:100%;max-height:min(450px,calc(85dvh - 148px));margin-inline:auto;object-fit:contain}
 .day-complete-share .share-buttons{display:flex;margin-top:16px}
 .day-complete-share .share-buttons .primary{width:100%;min-height:44px;font-size:14px}
 
 .share-action-icon{width:15px;height:15px;display:inline-block;vertical-align:-2px;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+
+/* Completed labels fit without changing tile height when a puzzle is solved. */
+.size-button .size-label{min-width:0}
+.size-button small{line-height:1.35}
+.timer-block .timer.completed{font-size:18px;letter-spacing:0}
+@media(max-width:950px) and (min-width:651px){.size-button{height:88px;min-height:88px}}
+@media(max-width:650px){.size-button{height:100px;min-height:100px}.size-button small{white-space:normal;font-size:8px;line-height:1.35}.timer-block .timer.completed{font-size:16px}}
+
+/* Sound stays in the lower-left slot without shifting Precision or zoom. */
+.board-bottom #sound-button{grid-column:1;grid-row:1;justify-self:start}
+.board-bottom .precision-toggle,.board-bottom .zoom-controls{grid-row:1}

@@ -88,3 +88,39 @@ export async function renderShareCard(model) {
  if(!blob)throw Error('Share card could not be generated.');
  return blob;
 }
+
+//Keep PNG Blobs for sharing; never cache a failed render or depend on File previews.
+export function createShareCardCache(render=renderShareCard){
+ const entries=new Map();
+ return {
+  prepare(model){
+   const key=JSON.stringify(model),cached=entries.get(model.day);
+   if(cached?.key===key&&!cached.error)return cached;
+   const entry={key,model,blob:null,error:null};entries.set(model.day,entry);
+   entry.promise=Promise.resolve().then(()=>render(model)).then(blob=>{
+    if(!blob)throw Error('Share card unavailable');entry.blob=blob;return blob;
+   }).catch(error=>{entry.error=error;return null;});
+   return entry;
+  },
+  retain(days){for(const day of entries.keys())if(!days.has(day))entries.delete(day);}
+ };
+}
+
+//Decode before inserting into the modal. A data URL avoids temporary object-URL
+//lifetimes and gives cached and freshly generated cards the same display path.
+export async function createShareCardImage(blob,alt){
+ const src=await new Promise((resolve,reject)=>{
+  const reader=new FileReader();reader.onload=()=>resolve(reader.result);
+  reader.onerror=reader.onabort=()=>reject(Error('Share card could not be read.'));
+  reader.readAsDataURL(blob);
+ });
+ return new Promise((resolve,reject)=>{
+  const image=new Image();image.className='share-card-image';image.alt=alt;
+  image.onload=()=>{
+   if(!image.naturalWidth||!image.naturalHeight){reject(Error('Share card image is empty.'));return;}
+   image.width=image.naturalWidth;image.height=image.naturalHeight;resolve(image);
+  };
+  image.onerror=()=>reject(Error('Share card image could not load.'));
+  image.src=src;
+ });
+}

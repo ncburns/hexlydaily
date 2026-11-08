@@ -1,11 +1,12 @@
-import {shareModel,shareText,renderShareCard} from './share.js';
+import {shareModel,shareText,createShareCardCache,createShareCardImage} from './share.js?v=2';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION,DAY_SHARE_DELAY} from './completion.js?v=3';
 import {Board} from './board.js?v=3';
-import {createGuidedTutorial} from './guided-tutorial.js?v=5';
+import {createGuidedTutorial} from './guided-tutorial.js?v=6';
 import {makeSounds,placementRate} from './audio.js?v=2';
-import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
+import {makeMusic,musicShouldUseCore} from './music.js?v=2';
+import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js?v=2';
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store=new LocalProgress(()=>{$('save-warning').hidden=false;$('save-label').textContent='Saving is unavailable in this browser.';});
@@ -14,10 +15,23 @@ if(!MODES.includes(mode))mode='mini';
 let record=null,puzzle=null,loadNumber=0,loading=true,toastTimer,worker,dialogAfterClose=null,confettiTimer,dayTimer,dayShareTimer;
 const completionSequence=new CompletionSequence(),unlockSequence=new CompletionSequence();let completionPending=false,pendingUnlock=null,dayBannerPending=false,selectedHistoryDay=dayKey(),solvedOutlineFrame=0;
 const cache=new Map(),pending=new Map();let workerId=0;
-const shareCards=new Map();let sharing=false;
+const shareCards=createShareCardCache();
 const sound=makeSounds(state=>{$('audio-notice').hidden=state!=='blocked';$('sound-button').title=state==='blocked'?'Retry sound effects':state==='muted'?'Enable sound effects':'Mute sound effects';});
 let soundEnabled=store.setting('sound',true)!==false;
 if(!soundEnabled)sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));
+let musicEnabled=store.setting('music',false)===true,musicStatus='off',guidedTutorial;
+const music=makeMusic(status=>{musicStatus=status;updateMusicStatus();});
+music.setEnabled(musicEnabled,{activateNow:false});
+//A saved Music preference starts on the first browser gesture. New visitors stay silent.
+document.addEventListener('pointerdown',()=>music.unlock(),{passive:true});
+document.addEventListener('keydown',()=>music.unlock());
+//The visible puzzle's progress selects the mix, regardless of an open popup.
+function syncMusicScene(){music.setInGame(musicShouldUseCore(guidedTutorial?.musicRecord()??record));}
+function updateMusicStatus(){syncMusicControls();const status=$('music-status'),retry=$('music-retry');if(status){status.textContent=musicStatus==='loading'?'Loading music…':musicStatus==='blocked'?'Click Retry music to start playback.':musicStatus==='error'?'Music couldn’t load. Please try again.':'';status.hidden=!status.textContent;}if(retry)retry.hidden=!['blocked','error'].includes(musicStatus);}
+function syncMusicControls(){if($('music-setting'))$('music-setting').checked=musicEnabled;}
+function setMusicEnabled(enabled){musicEnabled=enabled===true;store.setSetting('music',musicEnabled);music.setEnabled(musicEnabled);syncMusicControls();}
+function syncMusicPreference(){musicEnabled=store.setting('music',false)===true;music.setEnabled(musicEnabled);syncMusicControls();}
+syncMusicControls();
 const board=new Board($('board'),$('board-viewport'),handleAction);
 function notify(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>{$('toast').hidden=true;},3500);}
 function persist(){if(!record)return;if(store.save(record)){$('save-label').textContent='Progress saved in this browser.';$('save-warning').hidden=true;}prepareShareCards();}
@@ -38,7 +52,7 @@ function visibleSummaryRecords(){return store.all().map(r=>pendingUnlock&&r.day=
 function refreshSummary(){if(completionPending)return;const records=store.all(),visible=visibleSummaryRecords(),s=summary(visible,dayKey()),d=dailySummary(visible,currentDay);
  $('today-count').textContent=d.complete&&!dayBannerPending?'Day Complete!':`${d.count}/4 Complete`;$('today-count').classList.toggle('day-complete',d.complete&&!dayBannerPending);
  $('daily-progress-hexes').setAttribute('aria-label',`${d.count} of 4 daily puzzles complete`);$('daily-progress-hexes').querySelectorAll('svg').forEach((hex,i)=>hex.classList.toggle('filled',i<d.count));
- document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('[data-size-state]').textContent=r.solvedAt?formatTime(r.elapsedMs||0):'';b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'<b class="normal-dot"></b>'):'';});
+ document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('[data-size-state]').textContent=r.solvedAt?`Daily puzzle completed in ${formatTime(r.elapsedMs||0)}`:'';b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'<b class="normal-dot"></b>'):'';});
  $('best-times-list').innerHTML=bestMarkup(s,records);$('streak').textContent=s.streak;$('precision-streak').textContent=s.precisionStreak;
  refreshHistory(records);applyUnlockAppearance();
 }
@@ -71,7 +85,7 @@ function bindHistory(element){element.addEventListener('click',event=>{
 
 function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);$('countdown').textContent=formatTime(next-now);
  $('today-date').textContent=displayDay(dayKey(),{weekday:'long',month:'long',day:'numeric'});$('today-date').dateTime=dayKey();
- if(record){$('timer').textContent=formatTime(record.solvedAt?record.elapsedMs||0:record.startedAt?Math.max(0,Date.now()-record.startedAt):0);$('timer').setAttribute('aria-label',record.solvedAt?'Completed solve time':'Elapsed solve time');}
+ if(record){$('timer').textContent=record.solvedAt?`Completed in ${formatTime(record.elapsedMs||0)}`:formatTime(record.startedAt?Math.max(0,Date.now()-record.startedAt):0);$('timer').classList.toggle('completed',!!record.solvedAt);$('timer').setAttribute('aria-label',record.solvedAt?'Completed solve time':'Elapsed solve time');}
  if(dayKey()!==currentDay)$('new-day').hidden=false;
 }
 //Keep the solved outline in sync with the actual daily dialog lifecycle.
@@ -93,7 +107,7 @@ function revealSolvedOutlineAfterClose(){
   });
  });
 }
-function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!record||!puzzle)return;board.update(record,{celebrate,revealKeys});$('game').classList.toggle('is-solved',!!record.solvedAt&&!$('game').classList.contains('is-completing'));syncSolvedOutline();
+function refreshGame({celebrate=false,revealKeys=[]}={}){syncMusicScene();if(completionPending||!record||!puzzle)return;board.update(record,{celebrate,revealKeys});$('game').classList.toggle('is-solved',!!record.solvedAt&&!$('game').classList.contains('is-completing'));syncSolvedOutline();
  $('precision-button').setAttribute('aria-pressed',String(record.precision));$('precision-button').disabled=!!record.solvedAt||record.precisionFailed;
  $('precision-button').title=record.precisionFailed?'Precision is disabled for this attempt':record.startedAt?'Cannot change mode mid-game':record.precision?'Disable Precision Mode':'Enable Precision Mode';
  $('reset-button').hidden=!!record.solvedAt;$('reset-button').disabled=!!record.solvedAt||record.precision&&record.precisionAttempted;
@@ -102,11 +116,11 @@ function refreshGame({celebrate=false,revealKeys=[]}={}){if(completionPending||!
  updateZoom();updateClock();refreshSummary();
 }
 function nextUnsolved(){const start=MODES.indexOf(mode);for(let i=1;i<=4;i++){const m=MODES[(start+i)%4];if(!store.load(currentDay,m).solvedAt)return m;}return null;}
-async function openBoard(size,remember=true){cancelCompletion();mode=size;if(remember)store.setSetting('lastSize',mode);const request=++loadNumber;loading=true;$('precision-button').disabled=true;record=null;puzzle=null;clearTimeout(confettiTimer);if(!pendingUnlock?.started)sound.stop();$('game').classList.remove('is-celebrating','is-solved','has-solved-outline');$('completion').hidden=true;$('loading').hidden=false;$('loading-text').textContent='Preparing your daily puzzle…';$('retry-load').hidden=true;$('board-title').textContent=SIZE_NAMES[size];$('timer').textContent='0:00';$('timer').setAttribute('aria-label','Elapsed solve time');refreshSummary();
+async function openBoard(size,remember=true){cancelCompletion();mode=size;if(remember)store.setSetting('lastSize',mode);const request=++loadNumber;loading=true;$('precision-button').disabled=true;record=null;puzzle=null;clearTimeout(confettiTimer);if(!pendingUnlock?.started)sound.stop();$('game').classList.remove('is-celebrating','is-solved','has-solved-outline');$('completion').hidden=true;$('loading').hidden=false;$('loading-text').textContent='Preparing your daily puzzle…';$('retry-load').hidden=true;$('board-title').textContent=SIZE_NAMES[size];$('timer').textContent='0:00';$('timer').classList.remove('completed');$('timer').setAttribute('aria-label','Elapsed solve time');refreshSummary();
  try{const data=await loadPuzzle(currentDay,size);if(request!==loadNumber)return;puzzle=data;record=store.load(currentDay,size);if(applyPrecisionPreference(record,store.setting('precisionAlwaysOn',false)))persist();const clueKeys=new Set(puzzle.clues.map(([q,r])=>q+','+r));const valid=new Set(puzzle.cells.filter(([q,r])=>!clueKeys.has(q+','+r)).map(([q,r])=>q+','+r));record.selected=record.selected.filter(k=>valid.has(k));record.marked=record.marked.filter(k=>valid.has(k));board.render(puzzle);if(record.solvedAt&&!board.evaluate(record).solved){record.solvedAt=null;record.elapsedMs=null;record.precisionWin=false;persist();}loading=false;$('loading').hidden=true;updateZoom();refreshGame();if(pendingUnlock&&!pendingUnlock.started)startDailyUnlock();
  }catch(error){if(request!==loadNumber)return;$('loading-text').textContent='The puzzle couldn’t load. Please try again.';$('retry-load').hidden=false;console.error('Puzzle preparation failed',error);if(pendingUnlock&&!pendingUnlock.started)startDailyUnlock();}
 }
-function handleAction(type,key,cell){if(type==='unlock'){sound.unlock();return;}if(loading||!record||record.solvedAt)return;sound.unlock();record.startedAt??=Date.now();
+function handleAction(type,key,cell){if(type==='unlock'){sound.unlock();return;}if(loading||!record||record.solvedAt)return;sound.unlock();record.startedAt??=Date.now();syncMusicScene();
  if(type==='mark'){
   if(record.selected.includes(key)){persist();notify('Clear the hex first');return;}
   if(record.marked.includes(key)){record.marked=record.marked.filter(k=>k!==key);sound.play('clearMark');}
@@ -120,7 +134,7 @@ function handleAction(type,key,cell){if(type==='unlock'){sound.unlock();return;}
  const result=board.evaluate(record);
  if(record.precision&&result.over){record.precisionFailed=true;record.precision=false;record.selected=[];record.marked=[];persist();refreshGame();showPrecisionFailure();return;}
  let celebrate=false,revealKeys=[],personalBest=false,completedDay=false;
- if(result.solved){record.solvedAt=Date.now();record.elapsedMs=Math.max(0,record.solvedAt-record.startedAt);record.precisionWin=record.precision;
+ if(result.solved){record.solvedAt=Date.now();syncMusicScene();record.elapsedMs=Math.max(0,record.solvedAt-record.startedAt);record.precisionWin=record.precision;
   const best=summary(store.all(),currentDay).bestTimes[mode];personalBest=Math.floor(record.elapsedMs/1000)<Math.floor(best/1000);
   const priorMarks=new Set(record.marked);record.marked=board.choices.map(c=>board.key(c)).filter(k=>!record.selected.includes(k));revealKeys=record.marked.filter(k=>!priorMarks.has(k));celebrate=true;
  }
@@ -180,9 +194,9 @@ function startCompletion(revealKeys,personalBest,completedDay){
 function setMode(precision){if(!record||loading||record.startedAt||record.solvedAt||precision&&record.precisionFailed)return;const changed=record.precision!==precision;record.precision=precision;record.precisionManuallyChosen=true;persist();refreshGame();if(changed)sound.play(precision?'precisionToggle':'cardClick');}
 function showDialog(title,body,kind='',afterClose=null){
  if(dialogAfterClose){const fn=dialogAfterClose;dialogAfterClose=null;fn();}
- clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();syncSolvedOutline();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
+ clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();syncSolvedOutline();syncMusicScene();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
 }
-function closeDialog(){const dialog=$('dialog'),dailySolved=dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');clearTimeout(confettiTimer);dialog.querySelectorAll('.confetti').forEach(el=>el.remove());dialog.close();if(dailySolved)revealSolvedOutlineAfterClose();else syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
+function closeDialog(){const dialog=$('dialog'),dailySolved=dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');clearTimeout(confettiTimer);dialog.querySelectorAll('.confetti').forEach(el=>el.remove());dialog.close();if(dailySolved)revealSolvedOutlineAfterClose();else syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();syncMusicScene();}
 function showSolved(personalBest,completedDay){const next=nextUnsolved();
  showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button></div>`,'solved-dialog',startDailyUnlock);
  $('solved-continue').onclick=()=>{if(next){dialogAfterClose=null;closeDialog();openBoard(next);}else closeDialog();};
@@ -208,9 +222,8 @@ function showPrecisionFailure(){const next=MODES.find(m=>m!==mode&&!store.load(c
  $('continue-normal').onclick=()=>{closeDialog();notify('Switched to Normal Mode');};$('precision-exit').onclick=()=>{closeDialog();document.querySelector('[data-size="'+mode+'"]').focus();};if(next)$('try-another').onclick=()=>{closeDialog();openBoard(next);};
 }
 function precisionHelpMarkup(){return `<section class="precision-help" aria-labelledby="precision-help-title"><h3 id="precision-help-title">${icon('scope-bright')}<span>Precision Mode</span></h3><h4>How it works</h4><p>${copy.precisionHowItWorks}</p><h4>Daily Streak</h4><p>${copy.precisionDailyStreak}</p><h4>Precision Streak</h4><p>${copy.precisionStreakHelp}</p><h4>Badges</h4><p>${copy.precisionBadges}</p><h4>Tips</h4><ul class="rule-list">${copy.precisionTips.map(tip=>`<li>${tip}</li>`).join('')}</ul></section>`;}
-let guidedTutorial;
 function showHelp(){
- if(!guidedTutorial)guidedTutorial=createGuidedTutorial({sound,showHelp:showHelpText,showPopup:(title,body,label,onClose,kind='solved-dialog')=>{
+ if(!guidedTutorial)guidedTutorial=createGuidedTutorial({sound,onProgress:syncMusicScene,showHelp:showHelpText,showPopup:(title,body,label,onClose,kind='solved-dialog')=>{
   showDialog(title,`<p>${body}</p><div class="dialog-actions"><button class="button primary" id="tutorial-popup-continue">${label}</button></div>`,kind+' tutorial-popup',onClose);
   $('tutorial-popup-continue').onclick=closeDialog;
  }});
@@ -230,14 +243,15 @@ function showPrecision(infoOnly=false){infoOnly=infoOnly===true;
  $('precision-always-on').onchange=()=>store.setSetting('precisionAlwaysOn',$('precision-always-on').checked);
  $('precision-cancel').onclick=closeDialog;if(canEnable)$('precision-confirm').onclick=()=>{setMode(true);closeDialog();};
 }
-function showSettings(){showDialog('Settings',`<div class="settings-list"><label><span>Sound effects</span><input id="sound-setting" type="checkbox" ${soundEnabled?'checked':''}></label><label><span>${copy.warnings}</span><input id="warnings-setting" type="checkbox" ${store.setting('showPrecisionWarnings',true)?'checked':''}></label><button class="button quiet full" id="precision-info">Precision mode info</button></div>`);
+function showSettings(){showDialog('Settings',`<div class="settings-list"><label><span>Sound effects</span><input id="sound-setting" type="checkbox" ${soundEnabled?'checked':''}></label><label><span>Music</span><input id="music-setting" type="checkbox" ${musicEnabled?'checked':''}></label><p id="music-status" class="fine-print" role="status" hidden></p><button class="button quiet full" id="music-retry" hidden>Retry music</button><label><span>${copy.warnings}</span><input id="warnings-setting" type="checkbox" ${store.setting('showPrecisionWarnings',true)?'checked':''}></label><button class="button quiet full" id="precision-info">Precision mode info</button></div>`);
+ updateMusicStatus();$('music-setting').onchange=()=>setMusicEnabled($('music-setting').checked);$('music-retry').onclick=()=>music.unlock();
  $('sound-setting').onchange=()=>{$('sound-button').click();$('sound-setting').checked=soundEnabled;};$('warnings-setting').onchange=()=>store.setSetting('showPrecisionWarnings',$('warnings-setting').checked);$('precision-info').onclick=()=>showPrecision(true);
 }
 function showReset(){if(!record||record.solvedAt||record.precision&&record.precisionAttempted)return;showDialog(copy.resetTitle,`<p>${copy.resetBody}</p><div class="dialog-actions"><button class="button quiet" id="cancel-reset">Cancel</button><button class="button primary" id="confirm-reset">Yes</button></div>`,'reset-dialog');$('cancel-reset').onclick=closeDialog;$('confirm-reset').onclick=()=>{record.selected=[];record.marked=[];record.moves=0;persist();sound.play('reset');board.focused=null;board.active=null;board.focus();refreshGame();closeDialog();};}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 function bindBackupControls(){
  $('export-data').onclick=()=>{download(new Blob([JSON.stringify(store.backup(),null,2)],{type:'application/json'}),'Hexly_Daily_Progress_'+dayKey()+'.json');notify('Progress backup downloaded.');};$('choose-backup').onclick=()=>$('import-data').click();
- $('import-data').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('This file is too large for a progress backup.');const count=store.restore(JSON.parse(await file.text()));const savedSound=store.setting('sound',true)!==false;if(savedSound!==soundEnabled){soundEnabled=sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));}$('import-result').textContent=`Restored ${count} saved ${count===1?'puzzle':'puzzles'}.`;refreshSummary();await openBoard(mode);notify('Your progress is restored.');}catch(error){$('import-result').textContent=error.message;$('import-result').classList.add('import-error');}};
+ $('import-data').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('This file is too large for a progress backup.');const count=store.restore(JSON.parse(await file.text()));syncMusicPreference();const savedSound=store.setting('sound',true)!==false;if(savedSound!==soundEnabled){soundEnabled=sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));}$('import-result').textContent=`Restored ${count} saved ${count===1?'puzzle':'puzzles'}.`;refreshSummary();await openBoard(mode);notify('Your progress is restored.');}catch(error){$('import-result').textContent=error.message;$('import-result').classList.add('import-error');}};
 }
 function showPrivacy(){showDialog('About your data',`<p>Hexly Daily saves your selections, unused marks, solve times, completed puzzles, streak history, and preferences in this browser’s local storage. Every move is saved automatically.</p><p><strong>Web progress is separate from the iPhone and iPad app.</strong> There is no app synchronization or website account for these saves.</p><p>Clearing this site’s browser data, using private browsing, or changing browsers can remove or separate your progress.</p><section class="data-backup" aria-labelledby="backup-title"><h3 id="backup-title">Keep your progress</h3><p>Download a backup before changing browsers, devices, or domains. Use Restore backup to bring your saved puzzles, streak history, solve times, and preferences into this browser.</p><div class="dialog-actions"><button class="button quiet" id="export-data">Download backup</button><button class="button quiet" id="choose-backup">Restore backup</button></div><input id="import-data" type="file" accept=".json,application/json" hidden><p id="import-result" class="fine-print" role="status"></p></section><p>This game code does not send your puzzle progress to a server or include analytics or advertising trackers. Sharing sends only the result you choose through your device’s sharing tools.</p><p>When you follow an App Store or Nox Studios link, that website’s policies apply. The hosting provider may process ordinary connection information to serve this site.</p><p><a class="underlined" href="https://noxstudios.net/hexly.html#privacy" target="_blank" rel="noopener">Read the Hexly app privacy policy ↗</a></p><div class="dialog-actions"><button class="button primary" id="privacy-done">Back to Hexly</button><button class="button danger" id="clear-local-data">Clear all local data</button></div>`);bindBackupControls();$('privacy-done').onclick=closeDialog;$('clear-local-data').onclick=showClearData;}
 async function resetLocalGame(){
@@ -246,7 +260,7 @@ async function resetLocalGame(){
  currentDay=dayKey();selectedHistoryDay=currentDay;$('new-day').hidden=true;$('today-count').classList.remove('celebrate-day');
  const enabled=store.setting('sound',true)!==false;if(enabled!==soundEnabled)soundEnabled=sound.toggle();
  $('sound-button').setAttribute('aria-pressed',String(soundEnabled));
- await openBoard('mini',false);
+ syncMusicPreference();await openBoard('mini',false);
 }
 function showClearData(){
  showDialog('Clear all local data?',`<p>This permanently deletes <strong>all Hexly Daily game data and streak history saved in this browser</strong>, including puzzle progress, solve times, best times, and settings.</p><p>This cannot be undone. Your iPhone and iPad app data will not be affected.</p><label class="erase-acknowledgment"><input type="checkbox" id="erase-acknowledgment"><span>I understand that all game data and streak history in this browser will be permanently deleted.</span></label><p id="erase-error" role="alert" hidden></p><div class="dialog-actions"><button class="button quiet" id="cancel-erase">Cancel</button><button class="button danger" id="confirm-erase" disabled>Delete all game data</button></div>`,'erase-dialog');
@@ -263,46 +277,21 @@ function showClearData(){
   closeDialog();notify('All local Hexly data has been cleared.');
  };
 }
-//Prepare PNGs ahead of time so native sharing starts within the original click.
-function prepareShareCard(day,records=store.all()){
- const model=shareModel(records,day),key=JSON.stringify(model),cached=shareCards.get(day);
- if(cached?.key===key)return cached;
- const entry={key,model,file:null,pending:true,error:null};shareCards.set(day,entry);
- entry.promise=renderShareCard(model).then(blob=>{entry.file=new File([blob],'Hexly_Daily_'+day+'.png',{type:'image/png'});return blob;}).catch(error=>{entry.error=error;return null;}).finally(()=>{entry.pending=false;updateShareButtons();});
- return entry;
-}
-function updateShareButtons(){
- for(const [button,day] of [[$('share-day'),selectedHistoryDay]]){
-  if(!button)continue;const pending=!!shareCards.get(day)?.pending;
-  button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
- }
-}
+//Both automatic and manual sharing use the same cached PNG and image-loading path.
+function prepareShareCard(day,records=store.all()){return shareCards.prepare(shareModel(records,day));}
 function prepareShareCards(){
- if(!navigator.share)return;
  const records=store.all(),days=new Set([selectedHistoryDay,currentDay]);
  for(const day of days)prepareShareCard(day,records);
- //Keep the completed day's card ready even when the sidebar shows another day.
- for(const day of shareCards.keys())if(!days.has(day))shareCards.delete(day);
- updateShareButtons();
-}
-async function showShare(day=currentDay){
- if(sharing)return;
- if(!navigator.share){showSharePreview(day);return;}
- const entry=prepareShareCard(day);
- if(entry.pending){updateShareButtons();notify('Preparing your share card…');return;}
- if(!entry.file||!navigator.canShare?.({files:[entry.file]})){showSharePreview(day);return;}
- sharing=true;updateShareButtons();
- try{
-  //No asynchronous work before this call: preserve the click's user activation.
-  await navigator.share({files:[entry.file],url:entry.model.url,title:'Hexly'});
- }catch(error){if(error.name!=='AbortError')showSharePreview(day);}
- finally{sharing=false;updateShareButtons();}
+ shareCards.retain(days);
+ //The button opens the preview immediately, even while its PNG is still being prepared.
+ $('share-day').disabled=false;$('share-day').removeAttribute('aria-busy');
 }
 async function showSharePreview(day=currentDay,completedDay=false){
- const entry=prepareShareCard(day),model=entry.model,text=shareText(model);let shareBlob=null,previewURL=null;
- showDialog(completedDay?'Day Complete!':'Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div>${completedDay?'':`<p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p>`}<div class="share-buttons"><button class="button primary" id="native-share" disabled>Share <svg class="share-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18L18 6M6 6h12v12"/></svg></button>${completedDay?'':'<button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button>'}</div>${completedDay?'':'<p class="fine-print">No puzzle answers are included.</p>'}`,'share-dialog'+(completedDay?' day-complete-share':''));
+ const entry=prepareShareCard(day),model=entry.model,text=shareText(model);let shareBlob=null,closed=false;
+ showDialog(completedDay&&model.complete?'Day Complete!':'Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div>${completedDay?'':`<p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p>`}<div class="share-buttons"><button class="button primary" id="native-share" disabled>Share <svg class="share-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18L18 6M6 6h12v12"/></svg></button>${completedDay?'':'<button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button>'}</div>${completedDay?'':'<p class="fine-print">No puzzle answers are included.</p>'}`,'share-dialog'+(completedDay?' day-complete-share':''));
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
- dialogAfterClose=()=>{if(previewURL)URL.revokeObjectURL(previewURL);};
+ dialogAfterClose=()=>{closed=true;};
+ const isCurrent=()=>!closed&&preview.isConnected&&$('dialog').open&&$('share-preview')===preview;
  const copy=async()=>{try{await navigator.clipboard.writeText(text);notify('Results copied.');}catch(_){showDialog('Copy your results',`<p>Select and copy the text below.</p><textarea id="copy-text" readonly style="width:100%;min-height:260px;background:#0b151b;color:#d8e8eb;border:1px solid #45616a;padding:15px"></textarea>`);$('copy-text').value=text;$('copy-text').select();}};
  if($('copy-results'))$('copy-results').onclick=copy;
  const save=()=>{if(shareBlob)download(shareBlob,'Hexly_Daily_'+day+'.png');};if(saveButton)saveButton.onclick=save;
@@ -319,13 +308,15 @@ async function showSharePreview(day=currentDay,completedDay=false){
   finally{shareButton.disabled=false;}
  };
  try{
-  shareBlob=entry.file||await entry.promise;
+  shareBlob=await entry.promise;
   if(!shareBlob)throw entry.error||Error('Share card unavailable');
-  if(!preview.isConnected)return;
-  previewURL=URL.createObjectURL(shareBlob);const img=new Image();img.className='share-card-image';img.alt=text.replace('\n'+model.url,'');img.src=previewURL;preview.replaceChildren(img);preview.setAttribute('aria-busy','false');
+  if(!isCurrent())return;
+  const img=await createShareCardImage(shareBlob,text.replace('\n'+model.url,''));
+  if(!isCurrent())return;
+  preview.replaceChildren(img);preview.setAttribute('aria-busy','false');
   shareButton.disabled=false;if(saveButton)saveButton.disabled=false;
   if(!navigator.share&&!completedDay)shareButton.hidden=true;
- }catch(_){if(preview.isConnected){preview.textContent='The share card couldn’t load. You can still copy your results and website link.';preview.setAttribute('aria-busy','false');shareButton.textContent='Copy results';shareButton.disabled=false;shareButton.onclick=copy;}}
+ }catch(_){if(isCurrent()){preview.textContent='The share card couldn’t load. Please try again, or copy your results and website link.';const retry=document.createElement('button');retry.className='button quiet full';retry.textContent='Retry preview';retry.onclick=()=>showSharePreview(day,completedDay);preview.append(retry);preview.setAttribute('aria-busy','false');shareButton.textContent='Copy results';shareButton.disabled=false;shareButton.onclick=copy;}}
 }
 function updateZoom(){const z=board.zoom;$('zoom-label').textContent=Math.round(z*100)+'%';$('zoom-out').disabled=z===1;$('zoom-in').disabled=z===2.5;}
 $('zoom-out').onclick=()=>{board.setZoom(board.zoom-.5);updateZoom();};$('zoom-in').onclick=()=>{board.setZoom(board.zoom+.5);updateZoom();};
@@ -335,7 +326,7 @@ $('settings-button').onclick=showSettings;
 $('reset-button').onclick=showReset;
 $('help-button').onclick=showHelp;
 $('data-button').onclick=showPrivacy;
-$('share-day').onclick=()=>showShare(selectedHistoryDay);
+$('share-day').onclick=()=>showSharePreview(selectedHistoryDay,true);
 $('next-size').onclick=()=>{const next=nextUnsolved();if(next)openBoard(next);};$('retry-load').onclick=()=>openBoard(mode);
 $('dialog').addEventListener('close',()=>{if(!$('dialog').open&&!$('game').classList.contains('has-solved-outline')&&$('dialog').classList.contains('solved-dialog')&&!$('dialog').classList.contains('tutorial-popup'))revealSolvedOutlineAfterClose();});
 $('close-dialog').onclick=closeDialog;$('dialog').addEventListener('cancel',e=>{e.preventDefault();closeDialog();});$('dialog').addEventListener('click',e=>{if(e.target===$('dialog')){const r=$('dialog').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeDialog();}});
@@ -344,6 +335,7 @@ window.addEventListener('storage',event=>{
  if(!event.key?.startsWith(PREFIX))return;
  store.forget(event.key);
  if(event.key===PREFIX+'setting.precisionAlwaysOn'&&$('precision-always-on'))$('precision-always-on').checked=store.setting('precisionAlwaysOn',false)===true;
+ if(event.key===PREFIX+'setting.music')syncMusicPreference();
  if(event.key===PREFIX+'setting.sound'){const enabled=store.setting('sound',true)!==false;if(enabled!==soundEnabled)soundEnabled=sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));}
  if(event.key.startsWith(PREFIX+'board.')){
   if(record&&event.key===store.recordKey(currentDay,mode)){
@@ -357,6 +349,7 @@ window.addEventListener('storage',event=>{
   refreshSummary();
  }
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);clearTimeout(dayShareTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{updateClock();refreshSummary();}});
-window.addEventListener('pagehide',()=>{clearTimeout(dayShareTimer);unlockSequence.cancel();cancelCompletion();sound.pause();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){music.pause();if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);clearTimeout(dayShareTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{music.foreground();updateClock();refreshSummary();}});
+window.addEventListener('pageshow',event=>{if(event.persisted&&musicEnabled)music.foreground();});
+window.addEventListener('pagehide',()=>{music.pause();clearTimeout(dayShareTimer);unlockSequence.cancel();cancelCompletion();sound.pause();});
 $('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();animateSavedProgress();setInterval(updateClock,1000);showFirstVisitHelp();openBoard(mode);

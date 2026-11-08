@@ -28,7 +28,7 @@ export function tutorialPlan(puzzle){
  return steps;
 }
 
-export function createGuidedTutorial({sound,showHelp,showPopup}){
+export function createGuidedTutorial({sound,showHelp,showPopup,onProgress=()=>{}}){
  const dialog=document.createElement('dialog');
  dialog.id='tutorial-dialog';dialog.className='guided-tutorial';dialog.setAttribute('aria-labelledby','tutorial-title');
  dialog.innerHTML=`<div class="guided-header"><button class="icon-button" id="tutorial-exit" aria-label="Exit tutorial" autofocus><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5L19 19M19 5L5 19"/></svg></button><h2 id="tutorial-title">Tutorial</h2><button class="icon-button" id="tutorial-help" aria-label="How to play instructions">?</button></div><div class="guided-game demo-native" id="tutorial-game"><div class="board-viewport" id="tutorial-viewport"><div class="demo-board" id="tutorial-board" role="group" aria-label="Tutorial puzzle"></div></div><div class="guided-controls"><button class="precision-toggle" id="tutorial-precision" aria-label="Tutorial Precision Mode" aria-pressed="false" hidden><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button></div></div><section class="guided-instruction" aria-labelledby="tutorial-step-title"><div class="guided-instruction-content"><div class="guided-step-heading"><h3 id="tutorial-step-title"></h3><span id="tutorial-progress"></span></div><p id="tutorial-instruction" aria-live="polite"></p><p id="tutorial-feedback" role="status" hidden></p><button class="button quiet full" id="tutorial-continue" hidden>Continue</button></div></section>`;
@@ -54,10 +54,11 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
  const step=()=>plan[index];
  function message(text){$('tutorial-feedback').textContent=text;$('tutorial-feedback').hidden=false;}
  function resetBoard(){
-  sequence.cancel();finishing=false;record={selected:[],marked:[],precision:false,solvedAt:null};
+  sequence.cancel();finishing=false;record={selected:[],marked:[],precision:false,startedAt:null,solvedAt:null};
   game.classList.remove('is-solved','is-celebrating');board.render(puzzle);board.el.setAttribute('aria-label','Mini tutorial puzzle');
  }
  function render(){
+  onProgress();
   const s=step(),free=s.kind==='precisionSolve',canPlay=!!s.target||free;
   board.update(record);
   $('tutorial-step-title').textContent=s.title;$('tutorial-progress').textContent=`${index+1}/${plan.length}`;$('tutorial-instruction').textContent=s.body;
@@ -83,7 +84,7 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
   else showPopup('Solved!',step().body,'Continue',()=>{if(!dialog.open)return;resetBoard();enter(plan.findIndex(s=>s.kind==='precisionIntro'));});
  }
  function finish(isPrecision){
-  finishing=true;record.solvedAt=Date.now();
+  finishing=true;record.solvedAt=Date.now();onProgress();
   const prior=new Set(record.marked),remaining=board.choices.map(cell=>board.key(cell)).filter(key=>!record.selected.includes(key)),reveal=remaining.filter(key=>!prior.has(key));
   record.marked=remaining;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,timing=completionTiming(reveal.length,reduced);
@@ -108,6 +109,7 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
     record.selected=record.selected.filter(k=>k!==key);sound.play('deactivate');
    }else{record.selected.push(key);sound.play('activate',placementRate(record.selected.length,puzzle.solutionSize));board.animate(cell,'select');}
   }
+  record.startedAt??=Date.now();onProgress();
   const result=board.update(record);
   if(free){
    if(result.over){
@@ -116,12 +118,12 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
    }else if(result.solved)finish(true);
   }else enter(index+1);
  }
- function open(){if(dialog.open)return;resetBoard();index=0;render();dialog.showModal();dialog.scrollTop=0;}
- function close(){sequence.cancel();board.cancelPointer();board.timers.forEach(clearTimeout);board.timers.clear();sound.stop();dialog.close();}
+ function open(){if(dialog.open)return;resetBoard();index=0;render();dialog.showModal();dialog.scrollTop=0;onProgress();}
+ function close(){sequence.cancel();board.cancelPointer();board.timers.forEach(clearTimeout);board.timers.clear();sound.stop();dialog.close();onProgress();}
  $('tutorial-exit').onclick=close;$('tutorial-help').onclick=showHelp;
  $('tutorial-continue').onclick=()=>{sound.unlock();enter(index+1);};
  precision.onclick=()=>{if(step().kind!=='enablePrecision')return;sound.unlock();record.precision=true;sound.play('precisionToggle');enter(index+1);};
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)board.cancelPointer();});
- return {open,close};
+ return {open,close,musicRecord:()=>dialog.open?record:null};
 }
