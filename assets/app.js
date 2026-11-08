@@ -1,10 +1,10 @@
 import {shareModel,shareText,renderShareCard} from './share.js';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
-import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY} from './completion.js';
-import {Board} from './board.js?v=2';
-import {createGuidedTutorial} from './guided-tutorial.js?v=3';
-import {makeSounds} from './audio.js';
+import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION} from './completion.js?v=2';
+import {Board} from './board.js?v=3';
+import {createGuidedTutorial} from './guided-tutorial.js?v=4';
+import {makeSounds,placementRate} from './audio.js?v=2';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js';
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -95,7 +95,7 @@ function handleAction(type,key,cell){if(type==='unlock'){sound.unlock();return;}
  }else{
   if(record.marked.includes(key)){persist();notify('Clear mark first');return;}
   if(record.selected.includes(key)){if(record.precision){persist();notify('No undo in Precision Mode');return;}record.selected=record.selected.filter(k=>k!==key);sound.play('deactivate');}
-  else{record.selected.push(key);if(record.precision)record.precisionAttempted=true;sound.play('activate',1+Math.min(record.selected.length/puzzle.solutionSize,1)*.08);board.animate(cell,'select');}
+  else{record.selected.push(key);if(record.precision)record.precisionAttempted=true;sound.play('activate',placementRate(record.selected.length,puzzle.solutionSize));board.animate(cell,'select');}
   record.moves++;
  }
  const result=board.evaluate(record);
@@ -178,7 +178,7 @@ function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)re
  $('dialog').append(host);setTimeout(()=>host.remove(),1700);
 }
 function celebrateDay(){const day=currentDay;if(!dailySummary(store.all(),day).complete||store.setting('dayCompleteSeen.'+day,false))return;
- store.setSetting('dayCompleteSeen.'+day,true);clearTimeout(dayTimer);dayTimer=setTimeout(()=>{if(day!==currentDay)return;dayBannerPending=false;refreshSummary();sound.play('dayComplete');$('today-count').classList.add('celebrate-day');setTimeout(()=>$('today-count').classList.remove('celebrate-day'),700);},DAY_COMPLETE_DELAY);
+ store.setSetting('dayCompleteSeen.'+day,true);clearTimeout(dayTimer);dayTimer=setTimeout(()=>{if(day!==currentDay)return;dayBannerPending=false;refreshSummary();sound.play('dayComplete');$('today-count').classList.add('celebrate-day');setTimeout(()=>$('today-count').classList.remove('celebrate-day'),DAY_CELEBRATION_DURATION);},DAY_COMPLETE_DELAY);
 }
 function showPrecisionFailure(){const next=MODES.find(m=>m!==mode&&!store.load(currentDay,m).solvedAt&&!store.load(currentDay,m).precisionFailed);
  sound.play('precisionFail');showDialog(copy.precisionFailed,`<p>${next?copy.precisionRetry:copy.precisionExhausted}</p><div class="dialog-actions">${next?'<button class="button primary" id="try-another">Try Another Size</button>':''}<button class="button ${next?'quiet':'primary'}" id="continue-normal">Complete in Normal Mode</button><button class="button quiet" id="precision-exit">Exit</button></div>`,'precision-dialog');

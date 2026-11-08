@@ -1,3 +1,14 @@
+//SoundEffects.swift 1.0.35: sixteen pre-rendered +0.5% placement pitch steps.
+export function placementRate(selected,solutionSize) {
+    const fraction = Math.fround(selected / Math.max(1,solutionSize));
+    return Math.fround(1 + Math.fround(Math.min(fraction,1) * Math.fround(.08)));
+}
+export function placementClip(rate = 1) {
+    if (!Number.isFinite(rate)) return 'activate';
+    const position = Math.fround(Math.fround(Math.fround(rate) - 1) / Math.fround(.005));
+    const step = Math.round(Math.min(16, Math.max(0, position)));
+    return step ? 'activatePitch' + step : 'activate';
+}
 export function makeSounds(onStatus) {
     let enabled = true;
     let context;
@@ -49,6 +60,10 @@ export function makeSounds(onStatus) {
     };
     const play = async (event, rate = 1) => {
       if (!enabled) return;
+      if (event === 'activate') {
+        const pitched = placementClip(rate);
+        if (clips[pitched]) { event = pitched; rate = 1; }
+      }
       if (!clips[event]) { report('blocked'); return; }
       unlock();
       const run = generation;

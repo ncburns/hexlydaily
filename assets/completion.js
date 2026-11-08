@@ -1,5 +1,6 @@
-// Native GameViewModel, GameView, BoardJuice and HomeView timings (milliseconds).
+//Native Hexly 1.0.35 (build 1): GameViewModel, GameView, BoardJuice and HomeView.
 export const DAY_COMPLETE_DELAY=300;
+export const DAY_CELEBRATION_DURATION=730;
 export function completionTiming(count,reducedMotion=false){
  const revealInterval=reducedMotion?0:38;
  const popupAt=reducedMotion||!count?0:count*38+280;

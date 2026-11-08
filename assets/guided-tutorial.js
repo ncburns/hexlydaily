@@ -1,6 +1,7 @@
-import {Board} from './board.js?v=2';
+import {placementRate} from './audio.js?v=2';
+import {Board} from './board.js?v=3';
 import {generateUnique} from './generator.mjs';
-import {CompletionSequence,completionTiming} from './completion.js';
+import {CompletionSequence,completionTiming} from './completion.js?v=2';
 
 //The app's TutorialView seed and lesson order. Tutorial state stays in memory.
 export function tutorialPlan(puzzle){
@@ -105,7 +106,7 @@ export function createGuidedTutorial({sound,showHelp,showPopup}){
    if(record.selected.includes(key)){
     if(record.precision){message('No undo in Precision Mode');return;}
     record.selected=record.selected.filter(k=>k!==key);sound.play('deactivate');
-   }else{record.selected.push(key);sound.play('activate',1+Math.min(record.selected.length/puzzle.solutionSize,1)*.08);board.animate(cell,'select');}
+   }else{record.selected.push(key);sound.play('activate',placementRate(record.selected.length,puzzle.solutionSize));board.animate(cell,'select');}
   }
   const result=board.update(record);
   if(free){

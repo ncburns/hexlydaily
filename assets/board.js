@@ -30,7 +30,7 @@ export class Board {
   for(const detail of result.details){const c=this.clues.find(c=>+c.dataset.q===detail.q&&+c.dataset.r===detail.r);c.classList.toggle('is-correct',detail.count===detail.n);c.classList.toggle('is-over',detail.count>detail.n);c.setAttribute('aria-label',c.dataset.cellLabel+': '+detail.count+' selected neighbors'+(detail.count===detail.n?', correct':detail.count>detail.n?', too many':''));}
   this.cells.forEach(c=>record.solvedAt?c.setAttribute('aria-disabled','true'):c.removeAttribute('aria-disabled'));
   if(record.solvedAt){this.active=null;this.focused=null;this.focus();}
-  if(celebrate){this.setZoom(1);const reveal=new Set(revealKeys);let n=0;for(const c of this.choices.filter(c=>reveal.has(this.key(c))).sort((a,b)=>+a.dataset.q-+b.dataset.q||+a.dataset.r-+b.dataset.r)){c.classList.remove('is-marked');this.later(()=>{c.classList.add('is-marked');},n++*revealInterval);}}
+  if(celebrate){this.setZoom(1);const reveal=new Set(revealKeys);let n=0;for(const c of this.choices.filter(c=>reveal.has(this.key(c))).sort((a,b)=>+a.dataset.q-+b.dataset.q||+a.dataset.r-+b.dataset.r)){c.classList.remove('is-marked');this.later(()=>{c.classList.add('is-marked');this.animate(c,'mark');},n++*revealInterval);}}
 
 
   return result;
