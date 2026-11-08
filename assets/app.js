@@ -1,7 +1,7 @@
 import {shareModel,shareText,renderShareCard} from './share.js';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
-import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION} from './completion.js?v=2';
+import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION,DAY_SHARE_DELAY} from './completion.js?v=3';
 import {Board} from './board.js?v=3';
 import {createGuidedTutorial} from './guided-tutorial.js?v=5';
 import {makeSounds,placementRate} from './audio.js?v=2';
@@ -11,7 +11,7 @@ const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 const store=new LocalProgress(()=>{$('save-warning').hidden=false;$('save-label').textContent='Saving is unavailable in this browser.';});
 let currentDay=dayKey(),mode=MODES.includes(new URLSearchParams(location.search).get('size'))?new URLSearchParams(location.search).get('size'):store.setting('lastSize','mini');
 if(!MODES.includes(mode))mode='mini';
-let record=null,puzzle=null,loadNumber=0,loading=true,toastTimer,worker,dialogAfterClose=null,confettiTimer,dayTimer;
+let record=null,puzzle=null,loadNumber=0,loading=true,toastTimer,worker,dialogAfterClose=null,confettiTimer,dayTimer,dayShareTimer;
 const completionSequence=new CompletionSequence(),unlockSequence=new CompletionSequence();let completionPending=false,pendingUnlock=null,dayBannerPending=false,selectedHistoryDay=dayKey(),solvedOutlineFrame=0;
 const cache=new Map(),pending=new Map();let workerId=0;
 const shareCards=new Map();let sharing=false;
@@ -183,12 +183,11 @@ function showDialog(title,body,kind='',afterClose=null){
  clearTimeout(confettiTimer);$('dialog').className=kind;$('dialog-title').textContent=title;$('dialog-body').innerHTML=body;dialogAfterClose=afterClose;if(!$('dialog').open)$('dialog').showModal();syncSolvedOutline();if(kind==='solved-dialog'){$('dialog').getAnimations().forEach(animation=>animation.cancel());if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('dialog').animate([{opacity:0,transform:'translateY(10px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});}
 }
 function closeDialog(){const dialog=$('dialog'),dailySolved=dialog.classList.contains('solved-dialog')&&!dialog.classList.contains('tutorial-popup');clearTimeout(confettiTimer);dialog.querySelectorAll('.confetti').forEach(el=>el.remove());dialog.close();if(dailySolved)revealSolvedOutlineAfterClose();else syncSolvedOutline();const fn=dialogAfterClose;dialogAfterClose=null;fn?.();}
-function showSolved(personalBest,completedDay){const next=nextUnsolved(),solvedDay=record.day;
- showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button>${completedDay?'<button class="button quiet" id="solved-share">Share <span aria-hidden="true">↗</span></button>':''}</div>`,'solved-dialog',startDailyUnlock);
+function showSolved(personalBest,completedDay){const next=nextUnsolved();
+ showDialog('Solved!',`<div class="solved-time">${formatTime(record.elapsedMs||0)}</div>${personalBest?'<p class="personal-best">Personal Best!</p>':''}<div class="dialog-actions"><button class="button primary" id="solved-continue">${next?'Next Puzzle':'Continue'}</button></div>`,'solved-dialog',startDailyUnlock);
  $('solved-continue').onclick=()=>{if(next){dialogAfterClose=null;closeDialog();openBoard(next);}else closeDialog();};
  if(completedDay){
-  $('solved-share').dataset.shareDay=solvedDay;$('solved-share').onclick=()=>showShare(solvedDay);
-  prepareShareCards();
+  prepareShareCard(record.day);
   confettiTimer=setTimeout(()=>{if($('dialog').open&&$('dialog').classList.contains('solved-dialog'))confetti();},sound.duration('solved'));
  }
 }
@@ -197,7 +196,12 @@ function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)re
  $('dialog').append(host);setTimeout(()=>host.remove(),1700);
 }
 function celebrateDay(){const day=currentDay;if(!dailySummary(store.all(),day).complete||store.setting('dayCompleteSeen.'+day,false))return;
- store.setSetting('dayCompleteSeen.'+day,true);clearTimeout(dayTimer);dayTimer=setTimeout(()=>{if(day!==currentDay)return;dayBannerPending=false;refreshSummary();sound.play('dayComplete');$('today-count').classList.add('celebrate-day');setTimeout(()=>$('today-count').classList.remove('celebrate-day'),DAY_CELEBRATION_DURATION);},DAY_COMPLETE_DELAY);
+ store.setSetting('dayCompleteSeen.'+day,true);clearTimeout(dayTimer);clearTimeout(dayShareTimer);dayTimer=setTimeout(()=>{if(day!==currentDay)return;dayBannerPending=false;refreshSummary();sound.play('dayComplete');$('today-count').classList.add('celebrate-day');setTimeout(()=>$('today-count').classList.remove('celebrate-day'),DAY_CELEBRATION_DURATION);},DAY_COMPLETE_DELAY);
+ dayShareTimer=setTimeout(()=>{
+  //Never interrupt another dialog/tutorial or show an old day's result.
+  if(day!==currentDay||document.hidden||$('dialog').open||document.querySelector('#tutorial-dialog[open]')||!dailySummary(store.all(),day).complete)return;
+  showSharePreview(day,true);
+ },DAY_SHARE_DELAY);
 }
 function showPrecisionFailure(){const next=MODES.find(m=>m!==mode&&!store.load(currentDay,m).solvedAt&&!store.load(currentDay,m).precisionFailed);
  sound.play('precisionFail');showDialog(copy.precisionFailed,`<p>${next?copy.precisionRetry:copy.precisionExhausted}</p><div class="dialog-actions">${next?'<button class="button primary" id="try-another">Try Another Size</button>':''}<button class="button ${next?'quiet':'primary'}" id="continue-normal">Complete in Normal Mode</button><button class="button quiet" id="precision-exit">Exit</button></div>`,'precision-dialog');
@@ -237,7 +241,7 @@ function bindBackupControls(){
 }
 function showPrivacy(){showDialog('About your data',`<p>Hexly Daily saves your selections, unused marks, solve times, completed puzzles, streak history, and preferences in this browser’s local storage. Every move is saved automatically.</p><p><strong>Web progress is separate from the iPhone and iPad app.</strong> There is no app synchronization or website account for these saves.</p><p>Clearing this site’s browser data, using private browsing, or changing browsers can remove or separate your progress.</p><section class="data-backup" aria-labelledby="backup-title"><h3 id="backup-title">Keep your progress</h3><p>Download a backup before changing browsers, devices, or domains. Use Restore backup to bring your saved puzzles, streak history, solve times, and preferences into this browser.</p><div class="dialog-actions"><button class="button quiet" id="export-data">Download backup</button><button class="button quiet" id="choose-backup">Restore backup</button></div><input id="import-data" type="file" accept=".json,application/json" hidden><p id="import-result" class="fine-print" role="status"></p></section><p>This game code does not send your puzzle progress to a server or include analytics or advertising trackers. Sharing sends only the result you choose through your device’s sharing tools.</p><p>When you follow an App Store or Nox Studios link, that website’s policies apply. The hosting provider may process ordinary connection information to serve this site.</p><p><a class="underlined" href="https://noxstudios.net/hexly.html#privacy" target="_blank" rel="noopener">Read the Hexly app privacy policy ↗</a></p><div class="dialog-actions"><button class="button primary" id="privacy-done">Back to Hexly</button><button class="button danger" id="clear-local-data">Clear all local data</button></div>`);bindBackupControls();$('privacy-done').onclick=closeDialog;$('clear-local-data').onclick=showClearData;}
 async function resetLocalGame(){
- unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();cancelCompletion();clearTimeout(dayTimer);clearTimeout(confettiTimer);clearTimeout(toastTimer);dialogAfterClose=null;
+ unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();cancelCompletion();clearTimeout(dayTimer);clearTimeout(dayShareTimer);clearTimeout(confettiTimer);clearTimeout(toastTimer);dialogAfterClose=null;
  board.cancelPointer();board.timers.forEach(clearTimeout);board.timers.clear();sound.stop();board.setZoom(1);
  currentDay=dayKey();selectedHistoryDay=currentDay;$('new-day').hidden=true;$('today-count').classList.remove('celebrate-day');
  const enabled=store.setting('sound',true)!==false;if(enabled!==soundEnabled)soundEnabled=sound.toggle();
@@ -268,15 +272,14 @@ function prepareShareCard(day,records=store.all()){
  return entry;
 }
 function updateShareButtons(){
- for(const [button,day] of [[$('share-day'),selectedHistoryDay],[$('solved-share'),$('solved-share')?.dataset.shareDay]]){
+ for(const [button,day] of [[$('share-day'),selectedHistoryDay]]){
   if(!button)continue;const pending=!!shareCards.get(day)?.pending;
   button.disabled=sharing||pending;button.setAttribute('aria-busy',String(pending));
  }
 }
 function prepareShareCards(){
  if(!navigator.share)return;
- const records=store.all(),days=new Set([selectedHistoryDay]),solvedShare=$('solved-share');
- if($('dialog').open&&solvedShare?.dataset.shareDay)days.add(solvedShare.dataset.shareDay);
+ const records=store.all(),days=new Set([selectedHistoryDay,currentDay]);
  for(const day of days)prepareShareCard(day,records);
  //Keep the completed day's card ready even when the sidebar shows another day.
  for(const day of shareCards.keys())if(!days.has(day))shareCards.delete(day);
@@ -295,30 +298,34 @@ async function showShare(day=currentDay){
  }catch(error){if(error.name!=='AbortError')showSharePreview(day);}
  finally{sharing=false;updateShareButtons();}
 }
-async function showSharePreview(day=currentDay){
- const model=shareModel(store.all(),day),text=shareText(model);let shareBlob=null,previewURL=null;
- showDialog('Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div><p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p><div class="share-buttons"><button class="button primary" id="native-share" disabled>Share card ↗</button><button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button></div><p class="fine-print">No puzzle answers are included.</p>`,'share-dialog');
+async function showSharePreview(day=currentDay,completedDay=false){
+ const entry=prepareShareCard(day),model=entry.model,text=shareText(model);let shareBlob=null,previewURL=null;
+ showDialog(completedDay?'Day Complete!':'Share',`<div class="share-preview" id="share-preview" aria-busy="true">Preparing your share card…</div>${completedDay?'':`<p class="share-caption"><a class="share-link" href="${escapeHTML(model.url)}" target="_blank" rel="noopener">${escapeHTML(model.url)}</a></p>`}<div class="share-buttons"><button class="button primary" id="native-share" disabled>Share <svg class="share-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18L18 6M6 6h12v12"/></svg></button>${completedDay?'':'<button class="button quiet" id="copy-results">Copy results</button><button class="button quiet" id="download-result" disabled>Save image</button>'}</div>${completedDay?'':'<p class="fine-print">No puzzle answers are included.</p>'}`,'share-dialog'+(completedDay?' day-complete-share':''));
  const preview=$('share-preview'),shareButton=$('native-share'),saveButton=$('download-result');
  dialogAfterClose=()=>{if(previewURL)URL.revokeObjectURL(previewURL);};
  const copy=async()=>{try{await navigator.clipboard.writeText(text);notify('Results copied.');}catch(_){showDialog('Copy your results',`<p>Select and copy the text below.</p><textarea id="copy-text" readonly style="width:100%;min-height:260px;background:#0b151b;color:#d8e8eb;border:1px solid #45616a;padding:15px"></textarea>`);$('copy-text').value=text;$('copy-text').select();}};
- $('copy-results').onclick=copy;
- const save=()=>{if(shareBlob)download(shareBlob,'Hexly_Daily_'+day+'.png');};saveButton.onclick=save;
+ if($('copy-results'))$('copy-results').onclick=copy;
+ const save=()=>{if(shareBlob)download(shareBlob,'Hexly_Daily_'+day+'.png');};if(saveButton)saveButton.onclick=save;
+ const saveWithLink=async()=>{save();try{await navigator.clipboard.writeText(model.url);notify('Card downloaded. Website link copied.');}catch(_){notify('Card downloaded. Share it with '+model.url);}};
  shareButton.onclick=async()=>{
-  if(!navigator.share){save();return;}
+  if(!navigator.share){await saveWithLink();return;}
   const file=new File([shareBlob],'Hexly_Daily_'+day+'.png',{type:'image/png'});
   const supportsFiles=navigator.canShare?.({files:[file]});
   //Share the card and clean URL together without a text caption.
   //The receiving app still controls attachment order and presentation.
   const payload=supportsFiles?{files:[file],url:model.url,title:'Hexly'}:{url:model.url,title:'Hexly'};
-  try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError'){save();notify('Card downloaded. Use Copy results to include the website link.');}}
+  shareButton.disabled=true;
+  try{await navigator.share(payload);}catch(error){if(error.name!=='AbortError')await saveWithLink();}
+  finally{shareButton.disabled=false;}
  };
  try{
-  shareBlob=await renderShareCard(model);
+  shareBlob=entry.file||await entry.promise;
+  if(!shareBlob)throw entry.error||Error('Share card unavailable');
   if(!preview.isConnected)return;
   previewURL=URL.createObjectURL(shareBlob);const img=new Image();img.className='share-card-image';img.alt=text.replace('\n'+model.url,'');img.src=previewURL;preview.replaceChildren(img);preview.setAttribute('aria-busy','false');
-  shareButton.disabled=false;saveButton.disabled=false;
-  if(!navigator.share)shareButton.hidden=true;
- }catch(_){if(preview.isConnected){preview.textContent='The share card couldn’t load. You can still copy your results and website link.';preview.setAttribute('aria-busy','false');}}
+  shareButton.disabled=false;if(saveButton)saveButton.disabled=false;
+  if(!navigator.share&&!completedDay)shareButton.hidden=true;
+ }catch(_){if(preview.isConnected){preview.textContent='The share card couldn’t load. You can still copy your results and website link.';preview.setAttribute('aria-busy','false');shareButton.textContent='Copy results';shareButton.disabled=false;shareButton.onclick=copy;}}
 }
 function updateZoom(){const z=board.zoom;$('zoom-label').textContent=Math.round(z*100)+'%';$('zoom-out').disabled=z===1;$('zoom-in').disabled=z===2.5;}
 $('zoom-out').onclick=()=>{board.setZoom(board.zoom-.5);updateZoom();};$('zoom-in').onclick=()=>{board.setZoom(board.zoom+.5);updateZoom();};
@@ -343,13 +350,13 @@ window.addEventListener('storage',event=>{
    const incoming=store.load(currentDay,mode);
    if(event.newValue===null||incoming.updatedAt>record.updatedAt){
     cancelCompletion();
-    if(event.newValue===null){clearTimeout(dayTimer);clearTimeout(confettiTimer);dialogAfterClose=null;closeDialog();board.render(puzzle);sound.stop();}
+    if(event.newValue===null){clearTimeout(dayTimer);clearTimeout(dayShareTimer);clearTimeout(confettiTimer);dialogAfterClose=null;closeDialog();board.render(puzzle);sound.stop();}
     record=incoming;refreshGame();
    }
   }
   refreshSummary();
  }
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{updateClock();refreshSummary();}});
-window.addEventListener('pagehide',()=>{unlockSequence.cancel();cancelCompletion();sound.pause();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);clearTimeout(dayShareTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{updateClock();refreshSummary();}});
+window.addEventListener('pagehide',()=>{clearTimeout(dayShareTimer);unlockSequence.cancel();cancelCompletion();sound.pause();});
 $('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();animateSavedProgress();setInterval(updateClock,1000);showFirstVisitHelp();openBoard(mode);

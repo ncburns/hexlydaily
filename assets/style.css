@@ -151,7 +151,7 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 /* A focused skip-link destination is not a completed board. Keep tile/control keyboard focus. */
 #game{outline:none;-webkit-tap-highlight-color:transparent;border-color:rgba(166,173,184,.14);box-shadow:none;transition:none}
 /*The dialog lifecycle explicitly releases the solved outline for its one-second fade.*/
-#game.has-solved-outline{border-color:rgba(61,214,219,.85);box-shadow:0 0 18px 1px rgba(61,214,219,.3),0 0 36px rgba(61,214,219,.12);transition:border-color 1s ease,box-shadow 1s ease}
+#game.has-solved-outline{border-color:rgba(61,214,219,.85);box-shadow:0 0 18px 1px rgba(61,214,219,.15),0 0 36px rgba(61,214,219,.06);transition:border-color 1s ease,box-shadow 1s ease}
 /*Fixed dimensions keep every popup close button square, including wrapped titles.*/
 .dialog-heading .icon-button{width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;flex:0 0 36px;padding:0;line-height:1;box-sizing:border-box}
 @media(prefers-reduced-motion:reduce){.daily-progress-hexes svg,.daily-progress-hexes polygon,.native-icon{animation:none!important;transition:none!important;transform:none!important;filter:none!important}.native-icon.precision-revealing:not(.precision-waiting){opacity:1}}
@@ -230,3 +230,10 @@ button.week-day.selected{color:#3dd6db}
 #close-dialog svg,#tutorial-exit svg{display:block;width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /*Keep hidden popup headers hidden despite the shared close-button layout.*/
 .precision-dialog #close-dialog,.solved-dialog #close-dialog,.reset-dialog #close-dialog{display:none}
+
+/* The day-complete card and its Share action stay together on small screens. */
+.day-complete-share .share-card-image{width:auto;max-width:100%;max-height:min(450px,calc(85dvh - 148px));margin-inline:auto;object-fit:contain}
+.day-complete-share .share-buttons{display:flex;margin-top:16px}
+.day-complete-share .share-buttons .primary{width:100%;min-height:44px;font-size:14px}
+
+.share-action-icon{width:15px;height:15px;display:inline-block;vertical-align:-2px;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
