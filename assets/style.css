@@ -151,7 +151,9 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 /* A focused skip-link destination is not a completed board. Keep tile/control keyboard focus. */
 #game{outline:none;-webkit-tap-highlight-color:transparent}
 #game:not(.is-solved){border-color:rgba(166,173,184,.14);box-shadow:none}
-#game.is-solved{border-color:rgba(61,214,219,.6)}
+#game.is-solved{border-color:rgba(61,214,219,.6);transition:border-color 1s ease}
+/*Reveal the outer solved outline only after the daily Solved popup closes.*/
+body:has(#dialog[open].solved-dialog:not(.tutorial-popup)) #game.is-solved{border-color:rgba(166,173,184,.14);box-shadow:none;transition:none}
 @media(prefers-reduced-motion:reduce){.daily-progress-hexes svg,.daily-progress-hexes polygon,.native-icon{animation:none!important;transition:none!important;transform:none!important;filter:none!important}.native-icon.precision-revealing:not(.precision-waiting){opacity:1}}
 
 /* Mobile puzzle cards: name, centered completion badge, then solve time. */
