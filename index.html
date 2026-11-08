@@ -8,10 +8,19 @@
 <link rel="canonical" href="https://hexlydaily.com">
 <meta property="og:title" content="Hexly Daily"><meta property="og:type" content="website"><meta property="og:site_name" content="Hexly Daily"><meta property="og:description" content="Four sizes. One simple rule. A fresh set of hex logic puzzles every day.">
 <meta property="og:url" content="https://hexlydaily.com">
+<link rel="stylesheet" href="assets/launch.css?v=1"><script type="module" src="assets/launch.js?v=1"></script>
 <link rel="stylesheet" href="assets/tiles.css?v=3"><link rel="stylesheet" href="assets/style.css?v=20"><link rel="stylesheet" href="assets/tutorial.css?v=6">
-<script src="assets/demo-audio.js" defer></script><script src="assets/placement-audio.js?v=1" defer></script><script src="assets/app.js?v=29" type="module"></script>
+<script src="assets/demo-audio.js" defer></script><script src="assets/placement-audio.js?v=1" defer></script><script src="assets/app.js?v=30" type="module"></script>
 </head>
-<body>
+<body class="is-launching">
+<div id="launch-screen" class="launch-screen" role="status" aria-label="Loading Hexly">
+<svg class="launch-mark" viewBox="0 0 170 170" aria-hidden="true" focusable="false">
+<defs><linearGradient id="launch-face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1f2129"/><stop offset=".5" stop-color="#171a1f" stop-opacity=".85"/><stop offset="1" stop-color="#1f2129"/></linearGradient><filter id="launch-hex-glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#3dd6db" flood-opacity=".20"/></filter><filter id="launch-dot-glow" x="-200%" y="-200%" width="500%" height="500%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#3dd6db" flood-opacity=".35"/></filter></defs>
+<rect x=".5" y=".5" width="169" height="169" rx="37.4" fill="url(#launch-face)" stroke="#ffffff" stroke-opacity=".072"/>
+<polygon points="140.946,52.7 140.946,117.3 85,149.6 29.054,117.3 29.054,52.7 85,20.4" fill="none" stroke="#3dd6db" stroke-opacity=".95" stroke-width="5.95" filter="url(#launch-hex-glow)"/>
+<circle cx="85" cy="85" r="10.2" fill="#3dd6db" fill-opacity=".95" filter="url(#launch-dot-glow)"/>
+</svg></div>
+<div id="site-content" inert aria-hidden="true">
 <a class="skip" href="#game">Skip to puzzle</a>
 <header class="site-header"><div class="header-inner">
 <a class="wordmark" href="./" aria-label="Hexly Daily home">Hexly<span>DAILY</span></a>
@@ -45,5 +54,6 @@
 <footer class="site-footer"><a href="https://noxstudios.net" target="_blank" rel="noopener" class="studio-link"><img src="assets/nox-logo.png" alt="Nox Studios" width="75"></a><div><a href="https://noxstudios.net/hexly.html" target="_blank" rel="noopener">Discover Hexly</a><a href="https://noxstudios.net/hexly.html#books" target="_blank" rel="noopener">Puzzle books</a><a href="https://noxstudios.net/hexly.html#privacy" target="_blank" rel="noopener noreferrer">Privacy</a><a href="mailto:support@noxstudios.net">Support</a></div><span>© <span id="year">2027</span> Nox Studios</span></footer>
 <dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5L19 19M19 5L5 19"/></svg></button></div><div id="dialog-body"></div></dialog>
 <div id="toast" role="status" hidden></div>
-<noscript><div class="notice">Hexly Daily needs JavaScript to load and play its puzzles. Please enable it in your browser.</div></noscript>
+</div>
+<noscript><style>.launch-screen{display:none}body.is-launching{overflow:auto}#site-content{display:none}</style><div class="notice">Hexly Daily needs JavaScript to load and play its puzzles. Please enable it in your browser.</div></noscript>
 </body></html>

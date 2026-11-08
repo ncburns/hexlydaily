@@ -1,0 +1,10 @@
+/*Native dark SplashView: 170pt mark, 1.4s pulse, 0.28s exit.*/
+body.is-launching{overflow:hidden}
+.is-launching #site-content{visibility:hidden}
+.is-launching.is-launch-revealing #site-content{visibility:visible}
+.launch-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:#0f1214;background-image:radial-gradient(circle at center,rgba(61,214,219,.10) 10px,rgba(15,18,20,0) 265px,#0f1214 520px);opacity:1;transition:opacity .28s ease-out;touch-action:manipulation}
+.launch-screen[hidden]{display:none}
+.launch-screen.is-revealing{opacity:0}
+.launch-mark{display:block;width:170px;height:170px;overflow:visible;animation:launch-pulse 2.8s ease-in-out infinite;transform:scale(.98);filter:drop-shadow(0 10px 28px rgba(61,214,219,.35))}
+@keyframes launch-pulse{50%{transform:scale(1.02);filter:drop-shadow(0 10px 28px rgba(61,214,219,.70))}}
+@media(prefers-reduced-motion:reduce){.launch-mark{animation:none;transform:none}.launch-screen{transition:none}}

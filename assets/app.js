@@ -1,3 +1,4 @@
+import {launchScreen} from './launch.js?v=1';
 import {shareModel,shareText,createShareCardCache,createShareCardImage} from './share.js?v=2';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
@@ -18,6 +19,8 @@ const cache=new Map(),pending=new Map();let workerId=0;
 const shareCards=createShareCardCache();
 const sound=makeSounds(state=>{$('audio-notice').hidden=state!=='blocked';$('sound-button').title=state==='blocked'?'Retry sound effects':state==='muted'?'Enable sound effects':'Mute sound effects';});
 let soundEnabled=store.setting('sound',true)!==false;
+launchScreen.setSoundEnabled(soundEnabled);
+const returningBeforeLaunch=store.all().length>0||store.setting('lastSize',null)!==null;
 if(!soundEnabled)sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));
 let musicEnabled=store.setting('music',false)===true,musicStatus='off',guidedTutorial;
 const music=makeMusic(status=>{musicStatus=status;updateMusicStatus();});
@@ -235,7 +238,7 @@ function showHelpText(){showDialog('How to play',`<p>${copy.howToClick}</p><p>${
 function showFirstVisitHelp(){
  if(store.setting('howToPlaySeen',false))return;
  //Recognize existing visitors before openBoard saves their last size.
- if(store.all().length||store.setting('lastSize',null)!==null){store.setSetting('howToPlaySeen',true);return;}
+ if(returningBeforeLaunch){store.setSetting('howToPlaySeen',true);return;}
  showHelp();
 }
 function showPrecision(infoOnly=false){infoOnly=infoOnly===true;
@@ -321,7 +324,7 @@ async function showSharePreview(day=currentDay,completedDay=false){
   if(!navigator.share&&!completedDay)shareButton.hidden=true;
  }catch(_){if(isCurrent()){preview.textContent='The share card couldn’t load. Please try again, or copy your results and website link.';const retry=document.createElement('button');retry.className='button quiet full';retry.textContent='Retry preview';retry.onclick=()=>showSharePreview(day,completedDay);preview.append(retry);preview.setAttribute('aria-busy','false');shareButton.textContent='Copy results';shareButton.disabled=false;shareButton.onclick=copy;}}
 }
-$('sound-button').onclick=()=>{soundEnabled=sound.toggle();store.setSetting('sound',soundEnabled);$('sound-button').setAttribute('aria-pressed',String(soundEnabled));if(soundEnabled)sound.play('activate');};
+$('sound-button').onclick=()=>{soundEnabled=sound.toggle();store.setSetting('sound',soundEnabled);launchScreen.setSoundEnabled(soundEnabled);$('sound-button').setAttribute('aria-pressed',String(soundEnabled));if(soundEnabled)sound.play('activate');};
 $('precision-button').onclick=showPrecision;
 $('settings-button').onclick=showSettings;
 $('reset-button').onclick=showReset;
@@ -337,7 +340,7 @@ window.addEventListener('storage',event=>{
  store.forget(event.key);
  if(event.key===PREFIX+'setting.precisionAlwaysOn'&&$('precision-always-on'))$('precision-always-on').checked=store.setting('precisionAlwaysOn',false)===true;
  if(event.key===PREFIX+'setting.music')syncMusicPreference();
- if(event.key===PREFIX+'setting.sound'){const enabled=store.setting('sound',true)!==false;if(enabled!==soundEnabled)soundEnabled=sound.toggle();$('sound-button').setAttribute('aria-pressed',String(soundEnabled));}
+ if(event.key===PREFIX+'setting.sound'){const enabled=store.setting('sound',true)!==false;if(enabled!==soundEnabled)soundEnabled=sound.toggle();launchScreen.setSoundEnabled(soundEnabled);$('sound-button').setAttribute('aria-pressed',String(soundEnabled));}
  if(event.key.startsWith(PREFIX+'board.')){
   if(record&&event.key===store.recordKey(currentDay,mode)){
    const incoming=store.load(currentDay,mode);
@@ -353,4 +356,6 @@ window.addEventListener('storage',event=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){music.pause();if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);clearTimeout(dayShareTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{music.foreground();updateClock();refreshSummary();}});
 window.addEventListener('pageshow',event=>{if(event.persisted&&musicEnabled)music.foreground();});
 window.addEventListener('pagehide',()=>{music.pause();clearTimeout(dayShareTimer);unlockSequence.cancel();cancelCompletion();sound.pause();});
-$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();animateSavedProgress();setInterval(updateClock,1000);showFirstVisitHelp();openBoard(mode);
+$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();setInterval(updateClock,1000);
+openBoard(mode).finally(()=>launchScreen.ready());
+launchScreen.finished.then(revealed=>{if(revealed){animateSavedProgress();showFirstVisitHelp();}});
