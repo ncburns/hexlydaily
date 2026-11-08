@@ -151,7 +151,7 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 /* A focused skip-link destination is not a completed board. Keep tile/control keyboard focus. */
 #game{outline:none;-webkit-tap-highlight-color:transparent;border-color:rgba(166,173,184,.14);box-shadow:none;transition:none}
 /*The dialog lifecycle explicitly releases the solved outline for its one-second fade.*/
-#game.has-solved-outline{border-color:rgba(61,214,219,.85);box-shadow:0 0 18px 1px rgba(61,214,219,.15),0 0 36px rgba(61,214,219,.06);transition:border-color 1s ease,box-shadow 1s ease}
+#game.has-solved-outline{border-width:1px;border-color:#91d4d877;box-shadow:0 0 18px 1px rgba(145,212,216,.15),0 0 36px rgba(145,212,216,.06);transition:border-color 1s ease,box-shadow 1s ease}
 /*Fixed dimensions keep every popup close button square, including wrapped titles.*/
 .dialog-heading .icon-button{width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;flex:0 0 36px;padding:0;line-height:1;box-sizing:border-box}
 @media(prefers-reduced-motion:reduce){.daily-progress-hexes svg,.daily-progress-hexes polygon,.native-icon{animation:none!important;transition:none!important;transform:none!important;filter:none!important}.native-icon.precision-revealing:not(.precision-waiting){opacity:1}}
