@@ -15,10 +15,5 @@ export const copy = Object.freeze({
  green:'Green: The right amount are touching',
  yellow:'Yellow: Too many are touching',
  howToWin:'Turn every number green to solve the puzzle!',
- precisionHowItWorks:'When Precision Mode is enabled, you cannot undo glowing moves. Marks are still notes, so you can Clear them anytime.',
- precisionDailyStreak:'Your daily streak is always safe. Finishing the daily in normal mode still counts, even if a Precision attempt ends.',
- precisionStreakHelp:'Your Precision streak tracks consecutive days where you win at least one daily puzzle in Precision Mode.',
- precisionBadges:'Win a daily size in Precision Mode to earn a badge on that result and on your share card.',
- precisionTips:Object.freeze(['Plan your moves carefully','Start with easier dailies','Build your streak over time']),
  sharing:'Click Share to create a share card with your current streak and today\'s solve times.'
 });

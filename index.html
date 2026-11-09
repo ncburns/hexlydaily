@@ -2,25 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b1216"><title>Hexly Daily</title>
+<meta name="theme-color" content="#0b1216"><title>Hexly Daily · Pure Logic. No Guessing.</title>
 <meta name="description" content="Four fresh hex logic puzzles every day. Choose your size, make every number match, and keep your streak alive.">
 <link rel="icon" href="favicon.ico?v=2" sizes="any"><link rel="icon" href="assets/favicon-32.png?v=2" sizes="32x32" type="image/png"><link rel="icon" href="assets/hexly-icon.svg?v=2" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=3" sizes="180x180">
 <link rel="canonical" href="https://hexlydaily.com">
 <meta property="og:title" content="Hexly Daily"><meta property="og:type" content="website"><meta property="og:site_name" content="Hexly Daily"><meta property="og:description" content="Four sizes. One simple rule. A fresh set of hex logic puzzles every day.">
 <meta property="og:url" content="https://hexlydaily.com">
-<link rel="stylesheet" href="assets/launch.css?v=1"><script type="module" src="assets/launch.js?v=1"></script>
-<link rel="stylesheet" href="assets/tiles.css?v=3"><link rel="stylesheet" href="assets/style.css?v=22"><link rel="stylesheet" href="assets/tutorial.css?v=6">
-<script src="assets/demo-audio.js" defer></script><script src="assets/placement-audio.js?v=1" defer></script><script src="assets/app.js?v=30" type="module"></script>
+<link rel="stylesheet" href="assets/tiles.css?v=2"><link rel="stylesheet" href="assets/style.css?v=4"><link rel="stylesheet" href="assets/tutorial.css?v=1">
+<script src="assets/demo-audio.js" defer></script><script src="assets/app.js?v=5" type="module"></script>
 </head>
-<body class="is-launching">
-<div id="launch-screen" class="launch-screen" role="status" aria-label="Loading Hexly">
-<svg class="launch-mark" viewBox="0 0 170 170" aria-hidden="true" focusable="false">
-<defs><linearGradient id="launch-face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1f2129"/><stop offset=".5" stop-color="#171a1f" stop-opacity=".85"/><stop offset="1" stop-color="#1f2129"/></linearGradient><filter id="launch-hex-glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#3dd6db" flood-opacity=".20"/></filter><filter id="launch-dot-glow" x="-200%" y="-200%" width="500%" height="500%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#3dd6db" flood-opacity=".35"/></filter></defs>
-<rect x=".5" y=".5" width="169" height="169" rx="37.4" fill="url(#launch-face)" stroke="#ffffff" stroke-opacity=".072"/>
-<polygon points="140.946,52.7 140.946,117.3 85,149.6 29.054,117.3 29.054,52.7 85,20.4" fill="none" stroke="#3dd6db" stroke-opacity=".95" stroke-width="5.95" filter="url(#launch-hex-glow)"/>
-<circle cx="85" cy="85" r="10.2" fill="#3dd6db" fill-opacity=".95" filter="url(#launch-dot-glow)"/>
-</svg></div>
-<div id="site-content" inert aria-hidden="true">
+<body>
 <a class="skip" href="#game">Skip to puzzle</a>
 <header class="site-header"><div class="header-inner">
 <a class="wordmark" href="./" aria-label="Hexly Daily home">Hexly<span>DAILY</span></a>
@@ -35,25 +26,24 @@
 <div class="game-column">
 <section class="game-panel demo-native" id="game" aria-labelledby="board-title" tabindex="-1">
 <div class="game-heading"><h2 id="board-title">Mini</h2><div class="timer-block"><span class="timer" id="timer" role="timer" aria-label="Elapsed solve time">0:00</span></div></div>
-
+<div class="game-toolbar"><div class="small-controls"><button class="icon-button" id="sound-button" aria-label="Sound effects" aria-pressed="true" title="Mute sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 5 9H2v6h3l6 5zM15 8c2 2 2 6 0 8M18 4c5 4 5 12 0 16"/></svg></button><button id="reset-button" class="icon-button" aria-label="Reset puzzle" title="Reset puzzle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></svg></button></div></div>
 
 <div class="board-stage" id="board-stage"><div id="board-viewport" class="board-viewport"><div class="demo-board" id="board" role="group" aria-label="Daily puzzle"></div></div><div class="loading" id="loading" role="status"><span class="loading-hex" aria-hidden="true">⬡</span><span id="loading-text">Preparing your daily puzzle…</span><button id="retry-load" class="text-button" hidden>Try again</button></div></div>
-<div class="board-bottom"><button class="icon-button" id="sound-button" aria-label="Sound effects" aria-pressed="true" title="Mute sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 5 9H2v6h3l6 5zM15 8c2 2 2 6 0 8M18 4c5 4 5 12 0 16"/></svg></button><button id="precision-button" class="precision-toggle" aria-label="Precision mode" aria-pressed="false" title="Enable Precision mode" disabled><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button><button id="reset-button" class="icon-button" hidden disabled aria-label="Reset puzzle" title="Reset puzzle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></svg></button></div>
+<div class="board-bottom"><button id="precision-button" class="precision-toggle" aria-label="Precision mode" aria-pressed="false" title="Enable Precision mode" disabled><svg class="precision-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.75"/></svg><img src="assets/scope.svg" alt="" width="22" height="22"></button><div class="zoom-controls" aria-label="Puzzle zoom"><button id="zoom-out" aria-label="Zoom out" disabled>−</button><span id="zoom-label">100%</span><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
 
 
 <p id="audio-notice" class="audio-notice" role="alert" hidden>Sound couldn’t start. Click the speaker to retry.</p>
-<div id="completion" class="completion" hidden><div class="completion-actions"><button class="button primary" id="next-size">Next Puzzle</button></div></div>
+<div id="completion" class="completion" hidden><div class="completion-actions"><button class="button primary" id="next-size">Next Puzzle</button><button class="button quiet" id="share-solve">Share</button></div></div>
 </section>
 <p class="puzzle-refresh board-refresh">New puzzles in <b id="countdown">--:--:--</b></p>
 </div>
-<aside class="right-sidebar"><section class="streak-panel" aria-label="Streak"><div id="streak-header" class="native-streaks"><div><img class="native-flame" src="assets/flame.svg" width="26" height="29" alt=""><strong id="streak">0</strong><span>DAY STREAK</span></div><div><img class="native-scope" src="assets/scope.svg" width="26" height="26" alt=""><strong id="precision-streak">0</strong><span>PRECISION STREAK</span></div></div><div class="week" id="week" aria-label="This week"></div><section class="daily-stats-card" aria-labelledby="history-date"><div class="stats-day-heading" id="history-heading"><time id="history-date"></time><span id="history-count"></span></div><div id="daily-results" class="daily-results" aria-live="polite" aria-atomic="true"></div><div id="total-time" class="total-time" hidden><span>TOTAL TIME</span><strong id="total-time-value"></strong></div></section><section class="best-times" aria-labelledby="best-times-title"><h3 id="best-times-title">Best times</h3><dl id="best-times-list"></dl></section><button class="button quiet full" id="share-day">Share ↗</button></section>
+<aside class="right-sidebar"><section class="streak-panel" aria-label="Streak"><div id="streak-header" class="native-streaks"><div><img class="native-flame" src="assets/flame.svg" width="26" height="29" alt=""><strong id="streak">0</strong><span>DAY STREAK</span></div><div><img class="native-scope" src="assets/scope.svg" width="26" height="26" alt=""><strong id="precision-streak">0</strong><span>PRECISION STREAK</span></div></div><div class="week" id="week" aria-label="This week"></div><div class="stats-day-heading" id="history-heading"><time id="history-date"></time><span id="history-count"></span></div><div id="daily-results" class="daily-results" aria-live="polite" aria-atomic="true"></div><div id="total-time" class="total-time" hidden><span>TOTAL TIME</span><strong id="total-time-value"></strong></div><section class="best-times" aria-labelledby="best-times-title"><h3 id="best-times-title">Best times</h3><dl id="best-times-list"></dl></section><button class="button quiet full" id="share-day">Share</button></section>
 </aside>
 </div>
 <div class="under-game"><p><span class="save-dot" aria-hidden="true"></span><span id="save-label">Progress stays in this browser.</span> <button class="text-button" id="data-button">About your data</button></p><p>Pure logic. No guessing.</p></div>
 </main>
 <footer class="site-footer"><a href="https://noxstudios.net" target="_blank" rel="noopener" class="studio-link"><img src="assets/nox-logo.png" alt="Nox Studios" width="75"></a><div><a href="https://noxstudios.net/hexly.html" target="_blank" rel="noopener">Discover Hexly</a><a href="https://noxstudios.net/hexly.html#books" target="_blank" rel="noopener">Puzzle books</a><a href="https://noxstudios.net/hexly.html#privacy" target="_blank" rel="noopener noreferrer">Privacy</a><a href="mailto:support@noxstudios.net">Support</a></div><span>© <span id="year">2027</span> Nox Studios</span></footer>
-<dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5L19 19M19 5L5 19"/></svg></button></div><div id="dialog-body"></div></dialog>
+<dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">×</button></div><div id="dialog-body"></div></dialog>
 <div id="toast" role="status" hidden></div>
-</div>
-<noscript><style>.launch-screen{display:none}body.is-launching{overflow:auto}#site-content{display:none}</style><div class="notice">Hexly Daily needs JavaScript to load and play its puzzles. Please enable it in your browser.</div></noscript>
+<noscript><div class="notice">Hexly Daily needs JavaScript to load and play its puzzles. Please enable it in your browser.</div></noscript>
 </body></html>

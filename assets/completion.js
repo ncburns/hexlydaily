@@ -1,9 +1,5 @@
-//Native Hexly 1.0.35 (build 1): GameViewModel, GameView, BoardJuice and HomeView.
+// Native GameViewModel, GameView, BoardJuice and HomeView timings (milliseconds).
 export const DAY_COMPLETE_DELAY=300;
-export const DAY_CELEBRATION_DURATION=730;
-//HomeView waits 1.25s, then another 0.52s before automatically opening Streak.
-//Measured from the start of the day-complete sequence, including its 0.30s reveal delay.
-export const DAY_SHARE_DELAY=1250+520;
 export function completionTiming(count,reducedMotion=false){
  const revealInterval=reducedMotion?0:38;
  const popupAt=reducedMotion||!count?0:count*38+280;
