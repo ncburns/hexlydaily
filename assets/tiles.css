@@ -25,6 +25,7 @@
 .tile-mark-draw{stroke-dasharray:100;stroke-dashoffset:0}
 .is-marked .tile-fill{fill:rgba(15,18,20,.22)}.is-marked .tile-mark{opacity:1}
 .is-new-mark .tile-mark-draw{animation:hex-mark .2s ease-out both}
+.is-new-mark .tile-fill{transition:none;animation:hex-mark-fill .2s ease-out both}
 .tile-neighbor,.tile-focus{fill:none;stroke-width:2;opacity:0;stroke:rgba(var(--game-accent),.25)}
 .tile-focus{stroke:rgba(var(--game-accent),.55)}
 .is-neighbor .tile-neighbor,.is-focused .tile-focus{opacity:1}
@@ -45,6 +46,7 @@
 @keyframes hex-place{from{transform:scale(1.12)}to{transform:scale(1)}}
 @keyframes hex-bloom{from{opacity:1}to{opacity:0}}
 @keyframes hex-mark{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes hex-mark-fill{from{opacity:0}to{opacity:1}}
 @keyframes hex-solve{0%{transform:scale(1);animation-timing-function:ease-out}41.6667%,50%{transform:scale(1.045);animation-timing-function:ease-in}100%{transform:scale(1)}}
 @media(hover:none){.gesture-touch{display:inline}.gesture-pointer{display:none}}
 @media(max-width:380px){.demo-native{padding:16px 12px}.demo-native .demo-top{font-size:10px}.demo-controls{gap:0}.demo-native .demo-reset,.demo-sound{padding:7px 5px}}
