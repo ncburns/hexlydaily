@@ -41,7 +41,7 @@
 
 .precision-dialog,.reset-dialog{overflow:auto}
 
-.daily-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}.daily-status>span{font-size:13px;font-weight:650;white-space:nowrap;color:#a6adb8}.daily-status>.day-complete{color:#f3f5f7}.daily-progress-hexes{display:flex;align-items:center;gap:6px;flex-shrink:0}.daily-progress-hexes svg{display:block;width:18px;height:18px;overflow:visible}.daily-progress-hexes polygon{fill:transparent;stroke:#3dd6db;stroke-opacity:.75;stroke-width:1.6;transition:fill .22s ease,stroke-opacity .22s ease}.daily-progress-hexes .filled polygon{fill:#3dd6db;stroke-opacity:.55;stroke-width:1}
+.daily-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}.daily-status>span{font-size:13px;font-weight:650;white-space:nowrap;color:#f3f5f7}.daily-status>.day-complete{color:#f3f5f7}.daily-progress-hexes{display:flex;align-items:center;gap:6px;flex-shrink:0}.daily-progress-hexes svg{display:block;width:18px;height:18px;overflow:visible}.daily-progress-hexes polygon{fill:transparent;stroke:#3dd6db;stroke-opacity:.75;stroke-width:1.6;transition:fill .22s ease,stroke-opacity .22s ease}.daily-progress-hexes .filled polygon{fill:#3dd6db;stroke-opacity:.55;stroke-width:1}
 @media(max-width:1150px) and (min-width:651px){.daily-status{align-items:flex-start;flex-direction:column;gap:8px}}
 @media(max-width:650px){.daily-sidebar>.sidebar-title{align-items:flex-start;gap:12px}.daily-status{margin-top:0;flex-direction:column;align-items:flex-end;gap:6px}.daily-status>span{font-size:13px}}
 
@@ -101,10 +101,10 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 
 /* Daily context belongs with the size picker; refresh stays just below the board. */
 .daily-sidebar{padding-top:0}
-.daily-title-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;column-gap:12px;row-gap:2px;width:100%}
+.daily-title-row{display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:center;column-gap:12px;width:100%}
 .daily-sidebar>.sidebar-title{display:block}
 .daily-sidebar>.sidebar-title h2{margin:0;white-space:nowrap}
-.daily-title-row time{margin-left:auto;font-size:12px;font-weight:600;white-space:nowrap;text-align:right}
+.daily-title-row time{margin:0;font-size:12px;font-weight:600;white-space:nowrap;text-align:left}
 .daily-status{flex-direction:row;align-items:center;margin-top:10px}
 .daily-sidebar>.app-card{margin-top:22px}
 .board-refresh{margin:10px 0 0;text-align:center}
