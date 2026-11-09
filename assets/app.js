@@ -119,7 +119,13 @@ function bindHistory(element){element.addEventListener('click',event=>{
 
 function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);$('countdown').textContent=formatTime(next-now);
  $('today-date').textContent=displayDay(dayKey(),{weekday:'long',month:'long',day:'numeric'});$('today-date').dateTime=dayKey();
- if(record){$('timer').textContent=record.solvedAt?`Completed in ${formatTime(record.elapsedMs||0)}`:formatTime(record.startedAt?Math.max(0,Date.now()-record.startedAt):0);$('timer').classList.toggle('completed',!!record.solvedAt);$('timer').setAttribute('aria-label',record.solvedAt?'Completed solve time':'Elapsed solve time');}
+ if(record){
+  //Freeze the solve time immediately; reveal the completed label with Solved! and its sound.
+  const completed=!!record.solvedAt&&!completionPending;
+  const elapsed=record.solvedAt?(record.elapsedMs||0):(record.startedAt?Math.max(0,Date.now()-record.startedAt):0);
+  $('timer').textContent=(completed?'Completed in ':'')+formatTime(elapsed);
+  $('timer').classList.toggle('completed',completed);$('timer').setAttribute('aria-label',completed?'Completed solve time':'Elapsed solve time');
+ }
  if(dayKey()!==currentDay)$('new-day').hidden=false;
 }
 //Keep the solved outline in sync with the actual daily dialog lifecycle.
