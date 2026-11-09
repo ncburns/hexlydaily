@@ -1,3 +1,4 @@
+import {StreakFlipNumber} from './streak-flip.js?v=1';
 import {launchScreen} from './launch.js?v=1';
 import {shareModel,shareText,createShareCardCache,createShareCardImage} from './share.js?v=2';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
@@ -9,6 +10,7 @@ import {makeSounds,placementRate} from './audio.js?v=2';
 import {makeMusic,musicShouldUseCore} from './music.js?v=2';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js?v=2';
 const $=id=>document.getElementById(id);
+const streakNumber=new StreakFlipNumber($('streak')),precisionStreakNumber=new StreakFlipNumber($('precision-streak'));
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store=new LocalProgress(()=>{$('save-warning').hidden=false;$('save-label').textContent='Saving is unavailable in this browser.';});
 let currentDay=dayKey(),mode=MODES.includes(new URLSearchParams(location.search).get('size'))?new URLSearchParams(location.search).get('size'):store.setting('lastSize','mini');
@@ -46,7 +48,7 @@ async function loadPuzzle(day,size){const key=day+'|'+size;if(cache.has(key))ret
 }
 function sizeGraphic(index){let polygons='';const points=(cx,cy,r)=>Array.from({length:6},(_,i)=>{const a=(60*i-30)*Math.PI/180;return `${cx+Math.cos(a)*r},${cy+Math.sin(a)*r}`;}).join(' ');const radius=index+1,cell=12/(radius+1);for(let r=-radius;r<=radius;r++)for(let q=-radius;q<=radius;q++){if(Math.abs(q+r)>radius)continue;polygons+=`<polygon points="${points(22+Math.sqrt(3)*cell*(q+r/2),24+1.5*cell*r,cell*.83)}"/>`;}return `<svg class="size-graphic" viewBox="0 0 44 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width=".8">${polygons}</svg>`;}
 function createSizes(){
- $('size-list').innerHTML=MODES.map((m,i)=>`<button class="size-button" data-size="${m}" aria-pressed="false">${sizeGraphic(i)}<span class="size-label"><strong>${SIZE_NAMES[m]}</strong><small data-size-state></small></span><span class="done-icon" aria-hidden="true"></span><span class="card-press-shade" aria-hidden="true"></span></button>`).join('');
+ $('size-list').innerHTML=MODES.map((m,i)=>`<button class="size-button" data-size="${m}" aria-pressed="false">${sizeGraphic(i)}<span class="size-label"><strong>${SIZE_NAMES[m]}</strong></span><span class="done-icon" aria-hidden="true"></span><span class="card-press-shade" aria-hidden="true"></span></button>`).join('');
  document.querySelectorAll('[data-size]').forEach(button=>{
   let locked=false,animations=[];
   button.addEventListener('click',()=>{
@@ -81,11 +83,11 @@ function resultsMarkup(day){return MODES.map(m=>{const r=store.load(day,m),state
  return `<div class="daily-run ${state}" data-result-size="${m}" role="img" aria-label="${escapeHTML(label)}"><svg class="run-hex" viewBox="0 0 86.60254 100" aria-hidden="true"><polygon points="43.30127,2 84.87049,26 84.87049,74 43.30127,98 1.73205,74 1.73205,26" vector-effect="non-scaling-stroke"/></svg><div class="run-content" aria-hidden="true"><span>${SIZE_NAMES[m]}</span><strong>${time}</strong><i>${state==='precision'?icon('scope-bright'):state==='normal'?'<b class="normal-dot"></b>':''}</i></div></div>`;
  }).join('');}
 function visibleSummaryRecords(){return store.all().map(r=>pendingUnlock&&r.day===pendingUnlock.day&&r.mode===pendingUnlock.mode?{...r,solvedAt:null,elapsedMs:null,precisionWin:false}:r);}
-function refreshSummary(){if(completionPending)return;const records=store.all(),visible=visibleSummaryRecords(),s=summary(visible,dayKey()),d=dailySummary(visible,currentDay);
+function refreshSummary({animateStreaks=false}={}){if(completionPending)return;const records=store.all(),visible=visibleSummaryRecords(),s=summary(visible,dayKey()),d=dailySummary(visible,currentDay);
  $('today-count').textContent=d.complete&&!dayBannerPending?'Day Complete!':`${d.count}/4 Complete`;$('today-count').classList.toggle('day-complete',d.complete&&!dayBannerPending);
  $('daily-progress-hexes').setAttribute('aria-label',`${d.count} of 4 daily puzzles complete`);$('daily-progress-hexes').querySelectorAll('svg').forEach((hex,i)=>hex.classList.toggle('filled',i<d.count));
- document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('[data-size-state]').textContent=r.solvedAt?`Daily puzzle completed in ${formatTime(r.elapsedMs||0)}`:'';b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'<b class="normal-dot"></b>'):'';});
- $('best-times-list').innerHTML=bestMarkup(s,records);$('streak').textContent=s.streak;$('precision-streak').textContent=s.precisionStreak;
+ document.querySelectorAll('[data-size]').forEach(b=>{const r=store.load(currentDay,b.dataset.size);b.setAttribute('aria-pressed',String(b.dataset.size===mode));b.querySelector('.done-icon').innerHTML=r.solvedAt?(r.precisionWin?icon('scope'):'<b class="normal-dot"></b>'):'';});
+ $('best-times-list').innerHTML=bestMarkup(s,records);streakNumber.set(s.streak,{animate:animateStreaks});precisionStreakNumber.set(s.precisionStreak,{animate:animateStreaks});
  refreshHistory(records);applyUnlockAppearance();
 }
 //Match HomeCards.swift's one-time launch highlight for completed daily hexes.
@@ -190,7 +192,7 @@ function applyUnlockAppearance(){
  }
 }
 function finishUnlock(){
- if(!pendingUnlock)return;const complete=pendingUnlock.completedDay;pendingUnlock=null;unlockSequence.cancel();clearUnlockAppearance();refreshSummary();if(complete)celebrateDay();
+ if(!pendingUnlock)return;const complete=pendingUnlock.completedDay;pendingUnlock=null;unlockSequence.cancel();clearUnlockAppearance();refreshSummary({animateStreaks:true});if(complete)celebrateDay();
 }
 function startDailyUnlock(){
  const u=pendingUnlock;if(!u||u.started)return;u.started=true;refreshSummary();

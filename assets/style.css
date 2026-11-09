@@ -157,7 +157,7 @@ button.week-day{border:0;background:transparent;padding:4px 0;border-radius:6px;
 .dialog-heading .icon-button{width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;flex:0 0 36px;padding:0;line-height:1;box-sizing:border-box}
 @media(prefers-reduced-motion:reduce){.daily-progress-hexes svg,.daily-progress-hexes polygon,.native-icon{animation:none!important;transition:none!important;transform:none!important;filter:none!important}.native-icon.precision-revealing:not(.precision-waiting){opacity:1}}
 
-/* Mobile puzzle cards: name, centered completion badge, then solve time. */
+/* Mobile puzzle cards: name and centered completion badge. */
 @media(max-width:650px){
  .size-button{flex-direction:column;gap:3px}
  .size-button .size-label{display:contents}
@@ -240,7 +240,7 @@ button.week-day.selected{color:#3dd6db}
 .share-action-icon{width:15px;height:15px;display:inline-block;vertical-align:-2px;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 
-/* Completed labels fit without changing tile height when a puzzle is solved. */
+/* Keep tile dimensions stable when a completion badge appears. */
 .size-button .size-label{min-width:0}
 .size-button small{line-height:1.35}
 .timer-block .timer.completed{letter-spacing:0}
@@ -259,3 +259,15 @@ button.week-day.selected{color:#3dd6db}
 
 /* Native daily-card press shade; absolute positioning preserves every tile size. */
 .size-button .card-press-shade{position:absolute;inset:0;border-radius:inherit;background:#000;opacity:0;pointer-events:none}
+
+/*The native 420ms flip scales with the existing streak typography and color.*/
+.native-streaks .streak-number-flip{position:relative;display:inline-block;perspective:1.43em;isolation:isolate}
+.streak-number-flip b{font:inherit;line-height:inherit;letter-spacing:inherit;color:inherit}
+.streak-number-flip .streak-flip-size{display:block;visibility:hidden}
+.streak-number-flip .streak-flip-half{position:absolute;left:0;display:block;width:100%;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.streak-flip-top{top:0;transform-origin:center bottom}
+.streak-flip-bottom{bottom:0;transform-origin:center top}
+.streak-number-flip .streak-flip-glyph{position:absolute;left:0;display:flex;align-items:center;justify-content:center;width:100%;height:200%;white-space:nowrap}
+.streak-flip-top .streak-flip-glyph{top:0}
+.streak-flip-bottom .streak-flip-glyph{bottom:0}
+.streak-flip-fold,.streak-flip-unfold{z-index:1}
