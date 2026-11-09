@@ -7,6 +7,11 @@ export function validDay(day) {if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return false;
 export function shiftDay(day,n) { const [y,m,d]=day.split('-').map(Number);return dayKey(new Date(y,m-1,d+n,12)); }
 export function displayDay(day,options={month:'long',day:'numeric',year:'numeric'}) {const [y,m,d]=day.split('-').map(Number);return new Date(y,m-1,d,12).toLocaleDateString(undefined,options);}
 export function formatTime(ms) {const s=Math.max(0,Math.floor(ms/1000));return s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
+//Keep fractional seconds until display, and freeze at the winning move rather than the celebration.
+export function elapsedTimeMs(record,now=Date.now()) {
+ if(record.solvedAt!==null)return record.elapsedMs??0;
+ return record.startedAt===null?0:Math.max(0,now-record.startedAt);
+}
 export function blankRecord(day,mode){return {day,mode,selected:[],marked:[],precision:false,precisionManuallyChosen:false,precisionFailed:false,precisionAttempted:false,precisionWin:false,startedAt:null,solvedAt:null,elapsedMs:null,moves:0,updatedAt:0};}
 export function cleanRecord(input){
  if(!input||!validDay(input.day)||!MODES.includes(input.mode))return null;

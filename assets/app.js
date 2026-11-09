@@ -8,7 +8,7 @@ import {Board} from './board.js?v=3';
 import {createGuidedTutorial} from './guided-tutorial.js?v=6';
 import {makeSounds,placementRate} from './audio.js?v=2';
 import {makeMusic,musicShouldUseCore} from './music.js?v=2';
-import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,summary,dailySummary,weekHistory} from './state.js?v=2';
+import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,elapsedTimeMs,summary,dailySummary,weekHistory} from './state.js?v=3';
 const $=id=>document.getElementById(id);
 const streakNumber=new StreakFlipNumber($('streak')),precisionStreakNumber=new StreakFlipNumber($('precision-streak'));
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -117,15 +117,19 @@ function bindHistory(element){element.addEventListener('click',event=>{
  selectedHistoryDay=day;refreshHistory();element.querySelector(`[data-history-day="${day}"]`)?.focus({preventScroll:true});
  });}
 
+function updatePuzzleClock(){
+ if(!record)return;
+ //Match the app: check each tenth of a second, but render only when the displayed value changes.
+ const timer=$('timer'),completed=!!record.solvedAt&&!completionPending;
+ const text=(completed?'Completed in ':'')+formatTime(elapsedTimeMs(record));
+ const label=completed?'Completed solve time':'Elapsed solve time';
+ if(timer.textContent!==text)timer.textContent=text;
+ if(timer.classList.contains('completed')!==completed)timer.classList.toggle('completed',completed);
+ if(timer.getAttribute('aria-label')!==label)timer.setAttribute('aria-label',label);
+}
 function updateClock(){const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);$('countdown').textContent=formatTime(next-now);
  $('today-date').textContent=displayDay(dayKey(),{weekday:'long',month:'long',day:'numeric'});$('today-date').dateTime=dayKey();
- if(record){
-  //Freeze the solve time immediately; reveal the completed label with Solved! and its sound.
-  const completed=!!record.solvedAt&&!completionPending;
-  const elapsed=record.solvedAt?(record.elapsedMs||0):(record.startedAt?Math.max(0,Date.now()-record.startedAt):0);
-  $('timer').textContent=(completed?'Completed in ':'')+formatTime(elapsed);
-  $('timer').classList.toggle('completed',completed);$('timer').setAttribute('aria-label',completed?'Completed solve time':'Elapsed solve time');
- }
+ updatePuzzleClock();
  if(dayKey()!==currentDay)$('new-day').hidden=false;
 }
 //Keep the solved outline in sync with the actual daily dialog lifecycle.
@@ -397,6 +401,6 @@ window.addEventListener('storage',event=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden){music.pause();if(pendingUnlock){unlockSequence.cancel();pendingUnlock=null;dayBannerPending=false;clearUnlockAppearance();dialogAfterClose=null;}clearTimeout(dayTimer);clearTimeout(dayShareTimer);if(completionPending||$('game').classList.contains('is-completing')){cancelCompletion();refreshGame();}board.cancelPointer();sound.pause();}else{music.foreground();updateClock();refreshSummary();}});
 window.addEventListener('pageshow',event=>{if(event.persisted&&musicEnabled)music.foreground();});
 window.addEventListener('pagehide',()=>{music.pause();clearTimeout(dayShareTimer);unlockSequence.cancel();cancelCompletion();sound.pause();});
-$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();setInterval(updateClock,1000);
+$('year').textContent='2027';bindHistory($('week'));createSizes();updateClock();refreshSummary();setInterval(updateClock,1000);setInterval(updatePuzzleClock,100);
 openBoard(mode).finally(()=>launchScreen.ready());
 launchScreen.finished.then(revealed=>{if(revealed){animateSavedProgress();showFirstVisitHelp();}});
