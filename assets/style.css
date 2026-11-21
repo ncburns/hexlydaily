@@ -273,4 +273,4 @@ button.week-day.selected{color:#3dd6db}
 .streak-flip-fold,.streak-flip-unfold{z-index:1}
 
 /* Keep both store buttons within the former single-button footprint. */
-.app-card .store-buttons{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px}.app-card .store-buttons .button{width:100%;min-width:0;height:36px;min-height:36px;margin:0;padding:0 4px;white-space:nowrap;line-height:1.2;font-size:9px;gap:0}.app-card .android-placeholder:disabled{opacity:1;background:transparent;color:var(--accent);border-color:#91d4d84d;cursor:default}
+.app-card .store-buttons{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px}.app-card .store-buttons .button{width:100%;min-width:0;height:36px;min-height:36px;margin:0;padding:0 4px;white-space:nowrap;line-height:1.2;font-size:9px;gap:0}
