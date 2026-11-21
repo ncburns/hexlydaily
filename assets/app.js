@@ -1,11 +1,11 @@
 import {StreakFlipNumber} from './streak-flip.js?v=1';
 import {launchScreen} from './launch.js?v=1';
-import {shareModel,shareText,createShareCardCache,createShareCardImage} from './share.js?v=2';
+import {shareModel,shareText,createShareCardCache,createShareCardImage} from './share.js?v=3';
 import {howToExampleMarkup,mountHowToExample} from './tutorial.js?v=2';
 import {copy} from './native-copy.js?v=2';
 import {CompletionSequence,completionTiming,unlockTiming,DAY_COMPLETE_DELAY,DAY_CELEBRATION_DURATION,DAY_SHARE_DELAY} from './completion.js?v=3';
 import {Board} from './board.js?v=3';
-import {createGuidedTutorial} from './guided-tutorial.js?v=7';
+import {createGuidedTutorial} from './guided-tutorial.js?v=8';
 import {makeSounds,placementRate} from './audio.js?v=2';
 import {makeMusic,musicShouldUseCore} from './music.js?v=2';
 import {LocalProgress,MODES,SIZE_NAMES,applyPrecisionPreference,PREFIX,dayKey,displayDay,formatTime,elapsedTimeMs,summary,dailySummary,weekHistory} from './state.js?v=3';
@@ -77,10 +77,10 @@ function createSizes(){
   });
  });
 }
-function icon(name,extra=''){return `<img class="native-icon ${extra}" src="assets/${name}.svg${name==='flame'?'?v=2':''}" alt="">`;}
+function icon(name,extra=''){return `<img class="native-icon ${extra}" src="assets/${name}.svg${name==='flame'||name.startsWith('scope')?'?v=2':''}" alt="">`;}
 function bestMarkup(s,records){return MODES.map(m=>{const best=records.find(r=>r.mode===m&&r.solvedAt&&r.elapsedMs===s.bestTimes[m]);return `<div><dt>${SIZE_NAMES[m]} - ${best?formatTime(best.elapsedMs):'—'}</dt><dd>${best?escapeHTML(displayDay(best.day,{month:'numeric',day:'numeric',year:'2-digit'})):''}</dd></div>`;}).join('');}
 function resultsMarkup(day){return MODES.map(m=>{const r=store.load(day,m),state=r.solvedAt?(r.precisionWin?'precision':'normal'):'pending',time=r.solvedAt?formatTime(r.elapsedMs||0):'—',label=`${SIZE_NAMES[m]}: ${r.solvedAt?time+(r.precisionWin?', completed in Precision Mode':', completed in Normal Mode'):'not completed'}`;
- return `<div class="daily-run ${state}" data-result-size="${m}" role="img" aria-label="${escapeHTML(label)}"><svg class="run-hex" viewBox="0 0 86.60254 100" aria-hidden="true"><polygon points="43.30127,2 84.87049,26 84.87049,74 43.30127,98 1.73205,74 1.73205,26" vector-effect="non-scaling-stroke"/></svg><div class="run-content" aria-hidden="true"><span>${SIZE_NAMES[m]}</span><strong>${time}</strong><i>${state==='precision'?icon('scope-bright'):state==='normal'?'<b class="normal-dot"></b>':''}</i></div></div>`;
+ return `<div class="daily-run ${state}" data-result-size="${m}" role="img" aria-label="${escapeHTML(label)}"><svg class="run-hex" viewBox="0 0 86.60254 100" aria-hidden="true"><polygon points="43.30127,2 84.87049,26 84.87049,74 43.30127,98 1.73205,74 1.73205,26" vector-effect="non-scaling-stroke"/></svg><div class="run-content" aria-hidden="true"><span>${SIZE_NAMES[m]}</span><strong>${time}</strong><i>${state==='precision'?icon('scope-badge'):state==='normal'?'<b class="normal-dot"></b>':''}</i></div></div>`;
  }).join('');}
 function visibleSummaryRecords(){return store.all().map(r=>pendingUnlock&&r.day===pendingUnlock.day&&r.mode===pendingUnlock.mode?{...r,solvedAt:null,elapsedMs:null,precisionWin:false}:r);}
 function refreshSummary({animateStreaks=false}={}){if(completionPending)return;const records=store.all(),visible=visibleSummaryRecords(),s=summary(visible,dayKey()),d=dailySummary(visible,currentDay);

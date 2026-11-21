@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
-  <title>Precision mode</title>
-  <g stroke="#3dd6db" stroke-width="2" stroke-linecap="round">
-    <circle cx="16" cy="16" r="9"/>
-    <path d="M16 2.5v7M16 22.5v7M2.5 16h7M22.5 16h7"/>
-  </g>
-  <circle cx="16" cy="16" r="2" fill="#3dd6db"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128" fill="none" stroke="#3dd6db">
+  <title>Precision Mode</title>
+  <circle cx="32" cy="32" r="22.4" stroke-width="6"/>
+  <path d="M32 3V19.1 M32 44.9V61 M3 32H19.1 M44.9 32H61" stroke-width="5" stroke-linecap="round"/>
 </svg>

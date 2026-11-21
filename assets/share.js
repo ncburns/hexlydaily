@@ -23,7 +23,7 @@ export function shareText(model) {
 function loadIcon(name) {
  return new Promise((resolve,reject)=>{
   const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('Share card icon could not load.'));
-  image.src=new URL(`./${name}.svg${name==='flame'?'?v=2':''}`,import.meta.url).href;
+  image.src=new URL(`./${name}.svg?v=2`,import.meta.url).href;
  });
 }
 let icons;
@@ -31,7 +31,7 @@ let icons;
 //HomeShare.swift: StreakShareCard, ShareRunTile and ShareStreakStat at 360pt / 3x.
 //The image carries the native card. The clickable website link is included in the same share action.
 export async function renderShareCard(model) {
- const [flame,scope]=await (icons??=(Promise.all([loadIcon('flame'),loadIcon('scope-bright')]).catch(error=>{icons=null;throw error;})));
+ const [flame,scope,badge]=await (icons??=(Promise.all([loadIcon('flame'),loadIcon('scope'),loadIcon('scope-badge')]).catch(error=>{icons=null;throw error;})));
  const width=360,tileWidth=76,tileHeight=tileWidth/0.8660254037844386;
  const tilesY=103,tilesBottom=tilesY+tileHeight;
  const streakY=tilesBottom+16+(model.complete?29:0),ctaY=streakY+110,height=Math.ceil(ctaY+33);
@@ -55,7 +55,7 @@ export async function renderShareCard(model) {
  text('Hexly',16,16,22,700);text(model.date,16,46,13,500,color.muted);
  tracked('TODAY',16,76,11,1.5,color.teal);
  const rule=c.createLinearGradient(75,0,255,0);rule.addColorStop(0,'#3dd6db59');rule.addColorStop(1,'#3dd6db00');
- c.fillStyle=rule;c.fillRect(75,82,177,1);c.drawImage(scope,263,76,11,11);text('= Precision',279,76,11,500,color.muted);
+ c.fillStyle=rule;c.fillRect(75,82,177,1);c.drawImage(scope,262.5,75.5,12,12);text('= Precision',279,76,11,500,color.muted);
  for(const [i,run] of model.runs.entries()){
   const x=16+i*(tileWidth+8),cx=x+tileWidth/2;
   c.beginPath();c.moveTo(cx,tilesY);c.lineTo(x+tileWidth,tilesY+tileHeight/4);c.lineTo(x+tileWidth,tilesY+tileHeight*.75);c.lineTo(cx,tilesBottom);c.lineTo(x,tilesY+tileHeight*.75);c.lineTo(x,tilesY+tileHeight/4);c.closePath();
@@ -66,14 +66,14 @@ export async function renderShareCard(model) {
   //Fit hour-length records without allowing them to cross the tile's sides.
   c.font='700 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';const timeSize=Math.min(15,15*(tileWidth-10)/Math.max(1,c.measureText(run.time).width));
   text(run.time,cx,centerY-7,timeSize,700,run.state==='pending'?'#6b7380b3':color.text,'center');
-  if(run.state==='precision')c.drawImage(scope,cx-5,centerY+13,10,10);
+  if(run.state==='precision')c.drawImage(badge,cx-5.75,centerY+12.25,11.5,11.5);
   if(run.state==='normal'){c.fillStyle=color.muted;c.beginPath();c.arc(cx,centerY+18,2,0,Math.PI*2);c.fill();}
  }
  if(model.complete){
   c.font='700 11px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';const timeWidth=c.measureText(model.total).width,labelWidth=c.measureText('TOTAL TIME').width+9*1.5;
   const start=(width-labelWidth-8-timeWidth)/2;tracked('TOTAL TIME',start,tilesBottom+16,11,1.5,color.muted);text(model.total,start+labelWidth+8,tilesBottom+16,11,700);
  }
- c.drawImage(flame,92-9,streakY+2,18,21);c.drawImage(scope,268-7.5,streakY+5,15,15);
+ c.drawImage(flame,92-9,streakY+2,18,21);c.drawImage(scope,268-8.25,streakY+4.25,16.5,16.5);
  text(model.streak,92,streakY+28,28,700,color.text,'center');text(model.precisionStreak,268,streakY+28,28,700,color.teal,'center');
  tracked('DAY STREAK',92,streakY+68,11,.5,color.muted,true);tracked('PRECISION STREAK',268,streakY+68,11,.5,color.muted,true);
  c.fillStyle=color.line;c.fillRect(179.5,streakY+21,1,40);

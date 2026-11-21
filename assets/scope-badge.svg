@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128" fill="none" stroke="#3dd6db">
+  <title>Precision Mode</title>
+  <circle cx="32" cy="32" r="22.4" stroke-width="7.5"/>
+  <path d="M32 3.55V17.9 M32 46.1V60.45 M3.55 32H17.9 M46.1 32H60.45" stroke-width="6.1" stroke-linecap="round"/>
+</svg>
